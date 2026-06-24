@@ -45,6 +45,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         meta_description: d.meta_description || d.seoDescription || '',
         publishDate: d.publish_date?.toDate?.()?.toISOString() || null,
         faq_items: d.faq_items || [],
+        isCustomHtml: !!d.isCustomHtml,
       }), {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -115,6 +116,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       publish_date: publishDate,
       updated_date: new Date(),
       faq_items: data.faq_items || [],
+      isCustomHtml: !!data.isCustomHtml,
     };
 
     const ref = await adminDb.collection('articles').add(articleDoc);
@@ -164,6 +166,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       publish_date: publishDate,
       updated_date: new Date(),
       faq_items: fields.faq_items || [],
+      isCustomHtml: !!fields.isCustomHtml,
     };
 
     await adminDb.collection('articles').doc(id).update(articleDoc);

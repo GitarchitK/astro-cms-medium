@@ -53,7 +53,8 @@ if (adminDb && slug) {
           readingTime: d.readingTime || 5,
           tags: d.tags || [],
           status: d.status || 'published',
-          faq_items: d.faq_items || []
+          faq_items: d.faq_items || [],
+          isCustomHtml: !!d.isCustomHtml
         };
 
         // Redirect to the correct category slug if it doesn't match the URL parameter
@@ -92,6 +93,14 @@ if (adminDb && slug) {
 }
 
 if (!article) return Astro.redirect('/404');
+
+if (article.isCustomHtml) {
+  return new Response(article.content, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8'
+    }
+  });
+}
 
 // Automatic contextual internal links to build topics clusters
 function injectContextualLinks(contentHtml: string, currentSlug: string) {

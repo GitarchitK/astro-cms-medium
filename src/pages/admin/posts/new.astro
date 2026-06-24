@@ -32,10 +32,15 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       
       <div>
         <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-450 font-outfit">Content (Visual Editor)</label>
-          <span id="word-count" class="text-xs font-bold text-slate-400 font-outfit">0 words</span>
+          <label id="editor-label" class="text-xs font-bold uppercase tracking-wider text-slate-450 font-outfit">Content (Visual Editor)</label>
+          <div class="flex items-center gap-3">
+            <button type="button" id="auto-fill-btn" class="hidden px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[10px] font-black uppercase tracking-wider rounded-xl transition cursor-pointer">Auto-fill details from HTML</button>
+            <span id="word-count" class="text-xs font-bold text-slate-400 font-outfit">0 words</span>
+          </div>
         </div>
-        <div class="border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-sm">
+        
+        <!-- Visual Editor Wrapper -->
+        <div id="wysiwyg-editor-wrapper" class="border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-sm">
           <!-- Rich Text Toolbar -->
           <div class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex flex-wrap gap-1.5 items-center text-xs">
             <div class="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl">
@@ -58,7 +63,7 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
             
             <div class="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl">
               <button type="button" id="btn-ul" class="p-2 rounded-lg hover:bg-slate-105 text-slate-555 hover:text-slate-900 transition cursor-pointer" title="Bullet List">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12zm.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
               </button>
               <button type="button" id="btn-ol" class="p-2 rounded-lg hover:bg-slate-105 text-slate-555 hover:text-slate-900 transition cursor-pointer" title="Numbered List">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
@@ -80,15 +85,28 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
               <button type="button" id="btn-info" class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold font-outfit transition cursor-pointer border border-blue-200/50" title="Insert Info Callout">ℹ️ Info</button>
             </div>
           </div>
-          
           <!-- Editor Content Area -->
           <div id="wysiwyg-editor" class="px-5 py-4 bg-white text-slate-800 min-h-[450px] overflow-y-auto"></div>
         </div>
+        
+        <!-- Raw HTML Editor -->
+        <textarea id="raw-html-editor" class="hidden w-full min-h-[500px] font-mono bg-slate-900 text-slate-100 border border-slate-700 rounded-2xl p-5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30" placeholder="Paste your complete HTML / CSS document (including <!DOCTYPE html> ... </html>) here..."></textarea>
       </div>
     </div>
 
     <!-- Sidebar Settings -->
     <div class="space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-800 mb-3 font-outfit">Layout Style</h3>
+        <div class="flex items-center gap-2">
+          <input id="is-custom-html" type="checkbox" class="w-4 h-4 text-indigo-650 border-slate-350 rounded focus:ring-indigo-500 cursor-pointer" />
+          <label for="is-custom-html" class="text-xs font-bold uppercase tracking-wider text-slate-600 font-outfit cursor-pointer select-none">Raw HTML/CSS Mode</label>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-1.5 font-outfit leading-relaxed font-semibold">
+          If checked, the standard layouts, headers, and styles are bypassed. The article renders exactly as written.
+        </p>
+      </div>
+
       <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
         <h3 class="text-sm font-bold text-slate-800 mb-4 font-outfit">Article Settings</h3>
         <div class="space-y-4">
@@ -347,18 +365,89 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // Toggle editor type listeners
+    const isCustomHtmlCheckbox = document.getElementById('is-custom-html') as HTMLInputElement;
+    const wysiwygWrapper = document.getElementById('wysiwyg-editor-wrapper')!;
+    const rawHtmlEditor = document.getElementById('raw-html-editor') as HTMLTextAreaElement;
+    const editorLabel = document.getElementById('editor-label')!;
+    const autoFillBtn = document.getElementById('auto-fill-btn')!;
+
+    isCustomHtmlCheckbox?.addEventListener('change', () => {
+      const isChecked = isCustomHtmlCheckbox.checked;
+      if (isChecked) {
+        wysiwygWrapper.classList.add('hidden');
+        rawHtmlEditor.classList.remove('hidden');
+        editorLabel.textContent = 'Content (Raw HTML & CSS)';
+        autoFillBtn.classList.remove('hidden');
+        
+        const currentHtml = editor.getHTML();
+        if (currentHtml && currentHtml !== '<p></p>') {
+          rawHtmlEditor.value = currentHtml;
+        }
+      } else {
+        rawHtmlEditor.classList.add('hidden');
+        wysiwygWrapper.classList.remove('hidden');
+        editorLabel.textContent = 'Content (Visual Editor)';
+        autoFillBtn.classList.add('hidden');
+        
+        const currentRaw = rawHtmlEditor.value;
+        editor.commands.setContent(currentRaw || '');
+      }
+    });
+
+    // Auto-fill logic from pasted raw HTML code
+    autoFillBtn?.addEventListener('click', () => {
+      const html = rawHtmlEditor.value;
+      if (!html) { alert('Paste raw HTML code first!'); return; }
+      
+      const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
+      if (titleMatch) {
+        const rawTitle = titleMatch[1].split('|')[0].split('—')[0].trim();
+        (document.getElementById('title') as HTMLInputElement).value = rawTitle;
+        document.getElementById('title')?.dispatchEvent(new Event('input'));
+      }
+      
+      const descMatch = html.match(/<meta\s+name="description"\s+content="([\s\S]*?)"/i) || html.match(/<meta\s+property="og:description"\s+content="([\s\S]*?)"/i);
+      if (descMatch) {
+        (document.getElementById('excerpt') as HTMLTextAreaElement).value = descMatch[1].trim();
+      }
+      
+      const authorMatch = html.match(/<meta\s+name="author"\s+content="([\s\S]*?)"/i) || html.match(/<meta\s+property="og:author"\s+content="([\s\S]*?)"/i);
+      if (authorMatch) {
+        (document.getElementById('author') as HTMLInputElement).value = authorMatch[1].trim();
+      }
+      
+      // Auto word count
+      const textOnly = html.replace(/<[^>]*>/g, '');
+      const count = textOnly.trim() ? textOnly.trim().split(/\s+/).length : 0;
+      document.getElementById('word-count')!.textContent = `${count} words`;
+      
+      alert('Autofilled Title, Excerpt, Author, and calculated Word Count from HTML metadata!');
+    });
+
+    // Update word count for raw text area on input
+    rawHtmlEditor.addEventListener('input', () => {
+      const html = rawHtmlEditor.value;
+      const textOnly = html.replace(/<[^>]*>/g, '');
+      const count = textOnly.trim() ? textOnly.trim().split(/\s+/).length : 0;
+      document.getElementById('word-count')!.textContent = `${count} words`;
+    });
+
     async function savePost(status: string) {
       const title = (document.getElementById('title') as HTMLInputElement).value.trim();
       if (!title) { showAlert('Title is required', 'error'); return; }
 
       const tags = (document.getElementById('tags') as HTMLInputElement).value.split(',').map((t: string) => t.trim()).filter(Boolean);
       const publishDate = (document.getElementById('publish-date') as HTMLInputElement).value;
+      const isCustomHtml = isCustomHtmlCheckbox.checked;
+
+      const content = isCustomHtml ? rawHtmlEditor.value : editor.getHTML();
 
       const payload = {
         title,
         slug: (document.getElementById('slug') as HTMLInputElement).value || undefined,
         excerpt: (document.getElementById('excerpt') as HTMLTextAreaElement).value,
-        content: editor.getHTML(),
+        content,
         category: (document.getElementById('category') as HTMLSelectElement).value,
         author: (document.getElementById('author') as HTMLInputElement).value,
         tags,
@@ -366,7 +455,8 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
         seoTitle: (document.getElementById('seo-title') as HTMLInputElement).value,
         seoDescription: (document.getElementById('seo-desc') as HTMLTextAreaElement).value,
         status,
-        publishDate: publishDate || undefined
+        publishDate: publishDate || undefined,
+        isCustomHtml
       };
 
       const btnId = status === 'published' ? 'publish-btn' : 'save-draft';
