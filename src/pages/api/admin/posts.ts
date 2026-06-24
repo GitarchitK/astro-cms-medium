@@ -87,8 +87,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   try {
     const data = await request.json();
-    const slug = data.slug || generateSlug(data.title);
-    const wordCount = countWords(data.content?.replace(/<[^>]*>/g, '') || '');
+    let { title, slug, excerpt, author, content, featuredImage, status, publishDate, tags, faq_items, isCustomHtml } = data;
+
+    if (!title) {
+      return new Response(JSON.stringify({ error: 'Title is required' }), { status: 400 });
+    }
+
+    slug = slug || generateSlug(title);
+    const wordCount = countWords(content?.replace(/<[^>]*>/g, '') || '');
     const readingTime = Math.ceil(wordCount / 200);
 
     // Check duplicate slug
@@ -97,26 +103,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(JSON.stringify({ error: 'An article with this slug already exists' }), { status: 409 });
     }
 
-    const publishDate = data.publishDate ? new Date(data.publishDate) : new Date();
+    const publishDateObj = publishDate ? new Date(publishDate) : new Date();
 
     const articleDoc = {
-      title: data.title,
+      title,
       slug,
-      excerpt: data.excerpt || '',
-      content: data.content || '',
+      excerpt: excerpt || '',
+      content: content || '',
       category: data.category || 'AI Tools',
-      tags: data.tags || [],
-      featured_image: data.featuredImage || '',
-      author: data.author || 'Editor',
-      status: data.status || 'published',
-      meta_title: data.seoTitle || data.title,
-      meta_description: data.seoDescription || data.excerpt || '',
+      tags: tags || [],
+      featured_image: featuredImage || '',
+      author: author || 'Editor',
+      status: status || 'published',
+      meta_title: data.seoTitle || title,
+      meta_description: data.seoDescription || excerpt || '',
       wordCount,
       readingTime,
-      publish_date: publishDate,
+      publish_date: publishDateObj,
       updated_date: new Date(),
-      faq_items: data.faq_items || [],
-      isCustomHtml: !!data.isCustomHtml,
+      faq_items: faq_items || [],
+      isCustomHtml: !!isCustomHtml,
     };
 
     const ref = await adminDb.collection('articles').add(articleDoc);
@@ -144,29 +150,36 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const { id, ...fields } = data;
     if (!id) return new Response(JSON.stringify({ error: 'Missing id' }), { status: 400 });
 
-    const wordCount = countWords(fields.content?.replace(/<[^>]*>/g, '') || '');
+    let { title, slug, excerpt, author, content, featuredImage, status, publishDate, tags, faq_items, isCustomHtml } = fields;
+
+    if (!title) {
+      return new Response(JSON.stringify({ error: 'Title is required' }), { status: 400 });
+    }
+
+    slug = slug || generateSlug(title);
+    const wordCount = countWords(content?.replace(/<[^>]*>/g, '') || '');
     const readingTime = Math.ceil(wordCount / 200);
 
-    const publishDate = fields.publishDate ? new Date(fields.publishDate) : new Date();
+    const publishDateObj = publishDate ? new Date(publishDate) : new Date();
 
     const articleDoc = {
-      title: fields.title,
-      slug: fields.slug,
-      excerpt: fields.excerpt || '',
-      content: fields.content || '',
+      title,
+      slug,
+      excerpt: excerpt || '',
+      content: content || '',
       category: fields.category || 'AI Tools',
-      tags: fields.tags || [],
-      featured_image: fields.featuredImage || '',
-      author: fields.author || 'Editor',
-      status: fields.status || 'published',
-      meta_title: fields.seoTitle || fields.title,
-      meta_description: fields.seoDescription || fields.excerpt || '',
+      tags: tags || [],
+      featured_image: featuredImage || '',
+      author: author || 'Editor',
+      status: status || 'published',
+      meta_title: fields.seoTitle || title,
+      meta_description: fields.seoDescription || excerpt || '',
       wordCount,
       readingTime,
-      publish_date: publishDate,
+      publish_date: publishDateObj,
       updated_date: new Date(),
-      faq_items: fields.faq_items || [],
-      isCustomHtml: !!fields.isCustomHtml,
+      faq_items: faq_items || [],
+      isCustomHtml: !!isCustomHtml,
     };
 
     await adminDb.collection('articles').doc(id).update(articleDoc);

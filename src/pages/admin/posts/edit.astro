@@ -30,18 +30,27 @@ if (!postId) return Astro.redirect('/admin/posts');
 
   <div id="editor" class="hidden grid-cols-1 lg:grid-cols-3 gap-6" data-post-id={postId}>
     <div class="lg:col-span-2 space-y-5">
-      <input id="title" type="text" placeholder="Article title..." class="w-full bg-white border border-slate-250 text-slate-800 text-xl font-bold font-outfit rounded-xl px-5 py-4 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 placeholder-slate-400 transition-all shadow-inner" />
-      <input id="slug" type="text" placeholder="url-slug (auto-generated)" class="w-full bg-white border border-slate-250 text-slate-550 font-mono rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 placeholder-slate-400 transition-all" />
+      <div id="title-container">
+        <input id="title" type="text" placeholder="Article title..." class="w-full bg-white border border-slate-250 text-slate-800 text-xl font-bold font-outfit rounded-xl px-5 py-4 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 placeholder-slate-400 transition-all shadow-inner" />
+      </div>
+      <div id="slug-container">
+        <input id="slug" type="text" placeholder="url-slug (auto-generated)" class="w-full bg-white border border-slate-250 text-slate-550 font-mono rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 placeholder-slate-400 transition-all" />
+      </div>
       
-      <div>
+      <div id="excerpt-container">
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-450 font-outfit mb-2">Excerpt</label>
         <textarea id="excerpt" rows="2" placeholder="Write a short summary..." class="w-full bg-white border border-slate-250 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 resize-none placeholder-slate-400 transition-all"></textarea>
       </div>
       
       <div>
-        <div class="flex items-center justify-between mb-2">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
           <label id="editor-label" class="text-xs font-bold uppercase tracking-wider text-slate-450 font-outfit">Content (Visual Editor)</label>
           <div class="flex items-center gap-3">
+            <!-- Blogger-style View Switcher -->
+            <div class="flex items-center gap-1 bg-slate-100 border border-slate-200 p-1 rounded-xl">
+              <button type="button" id="btn-view-compose" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm">Compose</button>
+              <button type="button" id="btn-view-html" class="px-2.5 py-1 rounded-lg hover:bg-slate-50 text-slate-550 hover:text-slate-800 text-[10px] font-black uppercase tracking-wider transition cursor-pointer">HTML View</button>
+            </div>
             <button type="button" id="auto-fill-btn" class="hidden px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[10px] font-black uppercase tracking-wider rounded-xl transition cursor-pointer">Auto-fill details from HTML</button>
             <span id="word-count" class="text-xs font-bold text-slate-400 font-outfit">0 words</span>
           </div>
@@ -97,6 +106,11 @@ if (!postId) return Astro.redirect('/admin/posts');
           <!-- Editor Content Area -->
           <div id="wysiwyg-editor" class="px-5 py-4 bg-white text-slate-800 min-h-[450px] overflow-y-auto"></div>
         </div>
+
+        <!-- Iframe Preview Wrapper -->
+        <div id="iframe-preview-wrapper" class="hidden border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-sm min-h-[500px]">
+          <iframe id="preview-iframe" class="w-full min-h-[500px] border-none bg-white"></iframe>
+        </div>
         
         <!-- Raw HTML Editor -->
         <textarea id="raw-html-editor" class="hidden w-full min-h-[500px] font-mono bg-slate-900 text-slate-100 border border-slate-700 rounded-2xl p-5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30" placeholder="Paste your complete HTML / CSS document (including <!DOCTYPE html> ... </html>) here..."></textarea>
@@ -108,11 +122,11 @@ if (!postId) return Astro.redirect('/admin/posts');
       <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
         <h3 class="text-sm font-bold text-slate-800 mb-3 font-outfit">Layout Style</h3>
         <div class="flex items-center gap-2">
-          <input id="is-custom-html" type="checkbox" class="w-4 h-4 text-indigo-650 border-slate-350 rounded focus:ring-indigo-500 cursor-pointer" />
-          <label for="is-custom-html" class="text-xs font-bold uppercase tracking-wider text-slate-600 font-outfit cursor-pointer select-none">Raw HTML/CSS Mode</label>
+          <input id="is-custom-html" type="checkbox" class="w-4 h-4 text-indigo-650 border-slate-350 rounded focus:ring-indigo-550 cursor-pointer" />
+          <label for="is-custom-html" class="text-xs font-bold uppercase tracking-wider text-slate-600 font-outfit cursor-pointer select-none">Custom HTML/CSS Content</label>
         </div>
         <p class="text-[10px] text-slate-400 mt-1.5 font-outfit leading-relaxed font-semibold">
-          If checked, the standard layouts, headers, and styles are bypassed. The article renders exactly as written.
+          Write or paste raw HTML and custom CSS stylesheets for this article. The standard blog headers, footers, and layouts remain active.
         </p>
       </div>
 
@@ -174,25 +188,13 @@ if (!postId) return Astro.redirect('/admin/posts');
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
-        <h3 class="text-sm font-bold text-slate-800 mb-4 font-outfit">SEO Details</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 font-outfit mb-1.5">SEO Title</label>
-            <input id="seo-title" type="text" placeholder="Leave blank to use post title" class="w-full bg-white border border-slate-250 text-slate-855 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 font-outfit placeholder-slate-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 font-outfit mb-1.5">Meta Description</label>
-            <textarea id="seo-desc" rows="3" placeholder="Leave blank to use excerpt" class="w-full bg-white border border-slate-250 text-slate-855 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 resize-none font-outfit placeholder-slate-400"></textarea>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
   <script>
     const postId = document.getElementById('editor')?.dataset.postId;
 
+    import { parseHtmlMetadata } from '../../../lib/utils';
     import { Editor } from '@tiptap/core';
     import StarterKit from '@tiptap/starter-kit';
     import Link from '@tiptap/extension-link';
@@ -362,50 +364,130 @@ if (!postId) return Astro.redirect('/admin/posts');
     const rawHtmlEditor = document.getElementById('raw-html-editor') as HTMLTextAreaElement;
     const editorLabel = document.getElementById('editor-label')!;
     const autoFillBtn = document.getElementById('auto-fill-btn')!;
+    const btnViewCompose = document.getElementById('btn-view-compose')!;
+    const btnViewHtml = document.getElementById('btn-view-html')!;
+    let currentViewMode = 'compose';
+    let savedHtmlTemplate = '';
 
+    // Handle is-custom-html checkbox toggling
     isCustomHtmlCheckbox?.addEventListener('change', () => {
-      const isChecked = isCustomHtmlCheckbox.checked;
-      if (isChecked) {
-        wysiwygWrapper.classList.add('hidden');
-        rawHtmlEditor.classList.remove('hidden');
-        editorLabel.textContent = 'Content (Raw HTML & CSS)';
-        autoFillBtn.classList.remove('hidden');
-        
-        const currentHtml = editor.getHTML();
-        if (currentHtml && currentHtml !== '<p></p>') {
-          rawHtmlEditor.value = currentHtml;
-        }
+      const checked = isCustomHtmlCheckbox.checked;
+      if (checked) {
+        // Auto switch to HTML View
+        setViewMode('html', true);
       } else {
-        rawHtmlEditor.classList.add('hidden');
-        wysiwygWrapper.classList.remove('hidden');
-        editorLabel.textContent = 'Content (Visual Editor)';
-        autoFillBtn.classList.add('hidden');
-        
-        const currentRaw = rawHtmlEditor.value;
-        editor.commands.setContent(currentRaw || '');
+        // Restore Compose View
+        setViewMode('compose', true);
       }
     });
+
+    function getBodyContent(html: string): string {
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) {
+        return bodyMatch[1];
+      }
+      let clean = html;
+      clean = clean.replace(/<!DOCTYPE[^>]*>/i, '');
+      clean = clean.replace(/<html[^>]*>/i, '').replace(/<\/html>/i, '');
+      clean = clean.replace(/<head[^>]*>[\s\S]*?<\/head>/i, '');
+      return clean.trim();
+    }
+
+    function mergeBodyContent(template: string, newBody: string): string {
+      if (template && template.toLowerCase().includes('</body')) {
+        return template.replace(/(<body[^>]*>)([\s\S]*?)(<\/body>)/i, `$1\n${newBody}\n$3`);
+      }
+      return newBody;
+    }
+
+    function setViewMode(mode: 'compose' | 'html', syncContent: boolean = true) {
+      currentViewMode = mode;
+      const isCustom = isCustomHtmlCheckbox ? isCustomHtmlCheckbox.checked : false;
+      
+      if (mode === 'html') {
+        btnViewHtml.className = "px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm";
+        btnViewCompose.className = "px-2.5 py-1 rounded-lg hover:bg-slate-50 text-slate-550 hover:text-slate-800 text-[10px] font-black uppercase tracking-wider transition cursor-pointer";
+        
+        wysiwygWrapper.classList.add('hidden');
+        const iframePreviewWrapper = document.getElementById('iframe-preview-wrapper');
+        if (iframePreviewWrapper) iframePreviewWrapper.classList.add('hidden');
+        
+        rawHtmlEditor.classList.remove('hidden');
+        editorLabel.textContent = 'Content (HTML View)';
+        autoFillBtn.classList.remove('hidden');
+        
+        if (syncContent) {
+          try {
+            const currentHtml = editor.getHTML();
+            if (currentHtml && currentHtml !== '<p></p>') {
+              if (savedHtmlTemplate) {
+                rawHtmlEditor.value = mergeBodyContent(savedHtmlTemplate, currentHtml);
+              } else {
+                rawHtmlEditor.value = currentHtml;
+              }
+            }
+          } catch (e) {
+            console.error('Error syncing content to HTML view:', e);
+          }
+        }
+      } else {
+        btnViewCompose.className = "px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm";
+        btnViewHtml.className = "px-2.5 py-1 rounded-lg hover:bg-slate-50 text-slate-550 hover:text-slate-800 text-[10px] font-black uppercase tracking-wider transition cursor-pointer";
+        
+        rawHtmlEditor.classList.add('hidden');
+        editorLabel.textContent = isCustom ? 'Content (HTML Live Preview)' : 'Content (Visual Editor)';
+        autoFillBtn.classList.add('hidden');
+        
+        const iframePreviewWrapper = document.getElementById('iframe-preview-wrapper');
+        
+        if (isCustom) {
+          wysiwygWrapper.classList.add('hidden');
+          if (iframePreviewWrapper) iframePreviewWrapper.classList.remove('hidden');
+          const previewIframe = document.getElementById('preview-iframe') as HTMLIFrameElement;
+          if (previewIframe) {
+            previewIframe.srcdoc = rawHtmlEditor.value;
+          }
+        } else {
+          if (iframePreviewWrapper) iframePreviewWrapper.classList.add('hidden');
+          wysiwygWrapper.classList.remove('hidden');
+          
+          if (syncContent) {
+            try {
+              const currentRaw = rawHtmlEditor.value;
+              if (currentRaw.toLowerCase().includes('<html') || currentRaw.toLowerCase().includes('<body') || currentRaw.toLowerCase().includes('<!doctype')) {
+                savedHtmlTemplate = currentRaw;
+                editor.commands.setContent(getBodyContent(currentRaw) || '');
+              } else {
+                savedHtmlTemplate = '';
+                editor.commands.setContent(currentRaw || '');
+              }
+            } catch (e) {
+              console.error('Error syncing content to Compose view:', e);
+            }
+          }
+        }
+      }
+    }
+
+    btnViewCompose.addEventListener('click', () => setViewMode('compose'));
+    btnViewHtml.addEventListener('click', () => setViewMode('html'));
 
     // Auto-fill logic from pasted raw HTML code
     autoFillBtn?.addEventListener('click', () => {
       const html = rawHtmlEditor.value;
       if (!html) { alert('Paste raw HTML code first!'); return; }
       
-      const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
-      if (titleMatch) {
-        const rawTitle = titleMatch[1].split('|')[0].split('—')[0].trim();
-        (document.getElementById('title') as HTMLInputElement).value = rawTitle;
-        document.getElementById('title')?.dispatchEvent(new Event('input'));
-      }
+      const meta = parseHtmlMetadata(html);
       
-      const descMatch = html.match(/<meta\s+name="description"\s+content="([\s\S]*?)"/i) || html.match(/<meta\s+property="og:description"\s+content="([\s\S]*?)"/i);
-      if (descMatch) {
-        (document.getElementById('excerpt') as HTMLTextAreaElement).value = descMatch[1].trim();
-      }
+      (document.getElementById('title') as HTMLInputElement).value = meta.title;
+      document.getElementById('title')?.dispatchEvent(new Event('input'));
       
-      const authorMatch = html.match(/<meta\s+name="author"\s+content="([\s\S]*?)"/i) || html.match(/<meta\s+property="og:author"\s+content="([\s\S]*?)"/i);
-      if (authorMatch) {
-        (document.getElementById('author') as HTMLInputElement).value = authorMatch[1].trim();
+      (document.getElementById('excerpt') as HTMLTextAreaElement).value = meta.excerpt;
+      (document.getElementById('author') as HTMLInputElement).value = meta.author;
+      
+      if (meta.featuredImage) {
+        (document.getElementById('featured-image') as HTMLInputElement).value = meta.featuredImage;
+        document.getElementById('featured-image')?.dispatchEvent(new Event('input'));
       }
       
       // Auto word count
@@ -416,71 +498,99 @@ if (!postId) return Astro.redirect('/admin/posts');
       alert('Autofilled Title, Excerpt, Author, and calculated Word Count from HTML metadata!');
     });
 
-    // Update word count for raw text area on input
-    rawHtmlEditor.addEventListener('input', () => {
-      const html = rawHtmlEditor.value;
-      const textOnly = html.replace(/<[^>]*>/g, '');
-      const count = textOnly.trim() ? textOnly.trim().split(/\s+/).length : 0;
-      document.getElementById('word-count')!.textContent = `${count} words`;
-    });
-
     async function loadPost() {
       if (!postId) return;
-      const res = await fetch(`/api/admin/posts?id=${postId}`);
-      if (!res.ok) { window.location.href = '/admin/posts'; return; }
-      const post = await res.json();
+      try {
+        const res = await fetch(`/api/admin/posts?id=${postId}`);
+        if (!res.ok) {
+          showAlert('Failed to fetch article data: ' + res.statusText, 'error');
+          const loadingEl = document.getElementById('loading');
+          if (loadingEl) loadingEl.classList.add('hidden');
+          return;
+        }
+        const post = await res.json();
 
-      document.getElementById('loading')!.classList.add('hidden');
-      const editorEl = document.getElementById('editor')!;
-      editorEl.classList.remove('hidden');
-      editorEl.style.display = 'grid';
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.classList.add('hidden');
+        
+        const editorEl = document.getElementById('editor');
+        if (editorEl) {
+          editorEl.classList.remove('hidden');
+          editorEl.style.display = 'grid';
+        }
 
-      (document.getElementById('title') as HTMLInputElement).value = post.title || '';
-      (document.getElementById('slug') as HTMLInputElement).value = post.slug || '';
-      (document.getElementById('excerpt') as HTMLTextAreaElement).value = post.excerpt || '';
-      (document.getElementById('author') as HTMLInputElement).value = post.author || 'Editorial Team';
-      (document.getElementById('tags') as HTMLInputElement).value = (post.tags || []).join(', ');
-      (document.getElementById('featured-image') as HTMLInputElement).value = post.featuredImage || '';
-      (document.getElementById('seo-title') as HTMLInputElement).value = post.meta_title || '';
-      (document.getElementById('seo-desc') as HTMLTextAreaElement).value = post.meta_description || '';
-      (document.getElementById('category') as HTMLSelectElement).value = post.category || 'AI Tools';
-      
-      const categorySlug = (post.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      document.getElementById('post-slug-display')!.textContent = `/${categorySlug}/${post.slug}`;
-      (document.getElementById('view-post-link') as HTMLAnchorElement).href = `/${categorySlug}/${post.slug}`;
+        const titleInput = document.getElementById('title') as HTMLInputElement;
+        if (titleInput) titleInput.value = post.title || '';
+        
+        const slugInput = document.getElementById('slug') as HTMLInputElement;
+        if (slugInput) slugInput.value = post.slug || '';
+        
+        const excerptInput = document.getElementById('excerpt') as HTMLTextAreaElement;
+        if (excerptInput) excerptInput.value = post.excerpt || '';
+        
+        const authorInput = document.getElementById('author') as HTMLInputElement;
+        if (authorInput) authorInput.value = post.author || 'Editorial Team';
+        
+        const tagsInput = document.getElementById('tags') as HTMLInputElement;
+        if (tagsInput) tagsInput.value = (post.tags || []).join(', ');
+        
+        const featuredImageInput = document.getElementById('featured-image') as HTMLInputElement;
+        if (featuredImageInput) featuredImageInput.value = post.featuredImage || '';
+        
+        const categorySelect = document.getElementById('category') as HTMLSelectElement;
+        if (categorySelect) categorySelect.value = post.category || 'AI Tools';
+        
+        const categorySlug = (post.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const slugDisplay = document.getElementById('post-slug-display');
+        if (slugDisplay) slugDisplay.textContent = `/${categorySlug}/${post.slug}`;
+        
+        const viewLink = document.getElementById('view-post-link') as HTMLAnchorElement;
+        if (viewLink) viewLink.href = `/${categorySlug}/${post.slug}`;
 
-      // Convert publish date for the datetime-local input
-      if (post.publishDate) {
-        const date = new Date(post.publishDate);
-        const tzoffset = date.getTimezoneOffset() * 60000;
-        const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
-        (document.getElementById('publish-date') as HTMLInputElement).value = localISOTime;
+        if (post.publishDate) {
+          const date = new Date(post.publishDate);
+          const tzoffset = date.getTimezoneOffset() * 60000;
+          const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
+          const publishDateInput = document.getElementById('publish-date') as HTMLInputElement;
+          if (publishDateInput) publishDateInput.value = localISOTime;
+        }
+
+        // Setup editor layouts
+        const isCustomHtml = !!post.isCustomHtml;
+        if (isCustomHtmlCheckbox) isCustomHtmlCheckbox.checked = isCustomHtml;
+        const rawContent = post.content || '';
+        if (rawContent.toLowerCase().includes('<html') || rawContent.toLowerCase().includes('<body') || rawContent.toLowerCase().includes('<!doctype')) {
+          savedHtmlTemplate = rawContent;
+        } else {
+          savedHtmlTemplate = '';
+        }
+
+        if (isCustomHtml) {
+          if (rawHtmlEditor) rawHtmlEditor.value = rawContent;
+          setViewMode('html', false);
+        } else {
+          editor.commands.setContent(rawContent);
+          setViewMode('compose', false);
+        }
+
+        if (post.featuredImage) {
+          const previewImg = document.getElementById('preview-img') as HTMLImageElement;
+          if (previewImg) previewImg.src = post.featuredImage;
+          const imgPreview = document.getElementById('image-preview');
+          if (imgPreview) imgPreview.classList.remove('hidden');
+        }
+
+        const text = (post.content || '').replace(/<[^>]*>/g, '');
+        const wordCountEl = document.getElementById('word-count');
+        if (wordCountEl) {
+          wordCountEl.textContent = `${text.trim() ? text.trim().split(/\s+/).length : 0} words`;
+        }
+      } catch (err: any) {
+        console.error('Error loading post:', err);
+        showAlert('Error loading article data: ' + err.message, 'error');
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.classList.add('hidden');
       }
-
-      // Setup editor layouts
-      const isCustomHtml = !!post.isCustomHtml;
-      isCustomHtmlCheckbox.checked = isCustomHtml;
-      if (isCustomHtml) {
-        wysiwygWrapper.classList.add('hidden');
-        rawHtmlEditor.classList.remove('hidden');
-        editorLabel.textContent = 'Content (Raw HTML & CSS)';
-        autoFillBtn.classList.remove('hidden');
-        rawHtmlEditor.value = post.content || '';
-      } else {
-        rawHtmlEditor.classList.add('hidden');
-        wysiwygWrapper.classList.remove('hidden');
-        editorLabel.textContent = 'Content (Visual Editor)';
-        autoFillBtn.classList.add('hidden');
-        editor.commands.setContent(post.content || '');
-      }
-
-      if (post.featuredImage) {
-        (document.getElementById('preview-img') as HTMLImageElement).src = post.featuredImage;
-        document.getElementById('image-preview')!.classList.remove('hidden');
-      }
-
-      const text = (post.content || '').replace(/<[^>]*>/g, '');
-      document.getElementById('word-count')!.textContent = `${text.trim() ? text.trim().split(/\s+/).length : 0} words`;
     }
 
     document.getElementById('featured-image')?.addEventListener('input', (e) => {
@@ -503,27 +613,32 @@ if (!postId) return Astro.redirect('/admin/posts');
     }
 
     async function updatePost(status: string) {
+      const isCustomHtml = isCustomHtmlCheckbox ? isCustomHtmlCheckbox.checked : false;
+      const htmlContent = currentViewMode === 'html' 
+        ? (rawHtmlEditor ? rawHtmlEditor.value : '') 
+        : (savedHtmlTemplate ? mergeBodyContent(savedHtmlTemplate, editor.getHTML()) : editor.getHTML());
+
       const title = (document.getElementById('title') as HTMLInputElement).value.trim();
+      const slug = (document.getElementById('slug') as HTMLInputElement).value.trim();
+      const excerpt = (document.getElementById('excerpt') as HTMLTextAreaElement).value.trim();
+      const author = (document.getElementById('author') as HTMLInputElement).value.trim() || 'Editorial Team';
+      const featuredImage = (document.getElementById('featured-image') as HTMLInputElement).value.trim();
+
       if (!title) { showAlert('Title is required', 'error'); return; }
 
       const tags = (document.getElementById('tags') as HTMLInputElement).value.split(',').map((t: string) => t.trim()).filter(Boolean);
       const publishDate = (document.getElementById('publish-date') as HTMLInputElement).value;
-      const isCustomHtml = isCustomHtmlCheckbox.checked;
-
-      const content = isCustomHtml ? rawHtmlEditor.value : editor.getHTML();
 
       const payload = {
         id: postId,
         title,
-        slug: (document.getElementById('slug') as HTMLInputElement).value,
-        excerpt: (document.getElementById('excerpt') as HTMLTextAreaElement).value,
-        content,
+        slug,
+        excerpt,
+        content: htmlContent,
         category: (document.getElementById('category') as HTMLSelectElement).value,
-        author: (document.getElementById('author') as HTMLInputElement).value,
+        author,
         tags,
-        featuredImage: (document.getElementById('featured-image') as HTMLInputElement).value,
-        seoTitle: (document.getElementById('seo-title') as HTMLInputElement).value,
-        seoDescription: (document.getElementById('seo-desc') as HTMLTextAreaElement).value,
+        featuredImage,
         status,
         publishDate: publishDate || undefined,
         isCustomHtml
