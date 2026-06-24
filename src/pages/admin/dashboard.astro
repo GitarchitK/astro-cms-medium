@@ -1,0 +1,168 @@
+---
+export const prerender = false;
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const session = Astro.cookies.get('admin_session');
+if (session?.value !== 'authenticated') return Astro.redirect('/admin');
+---
+
+<AdminLayout title="Dashboard" activeNav="dashboard">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-black font-outfit text-slate-800 tracking-tight">Dashboard</h1>
+    <p class="text-slate-500 text-sm mt-1 font-outfit font-medium">Welcome back, Editor 👋</p>
+  </div>
+
+  <!-- Stats Grid (Dynamically Loaded) -->
+  <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
+    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
+    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
+    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm mb-10 max-w-4xl">
+    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-4">Quick Actions</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <a href="/admin/posts/new" class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/10 text-white px-5 py-3.5 rounded-xl text-sm font-bold font-outfit transition-all active:scale-[0.98]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Write New Post
+      </a>
+      <a href="/admin/posts" class="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-250 text-slate-700 px-5 py-3.5 rounded-xl text-sm font-bold font-outfit transition-all">
+        Manage Articles
+      </a>
+      <a href="/admin/categories" class="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-250 text-slate-700 px-5 py-3.5 rounded-xl text-sm font-bold font-outfit transition-all">
+        Manage Categories
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent Posts -->
+  <div>
+    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-4">Recent Articles</h2>
+    <div id="recent-posts" class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
+      <div class="p-6 text-slate-400 text-sm flex items-center justify-center gap-3">
+        <svg class="w-5 h-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span>Loading articles...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Stats Loading
+    fetch('/api/admin/stats')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('stats-grid')!.innerHTML = `
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-350 transition-all flex items-center justify-between group shadow-sm">
+            <div>
+              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Total Articles</p>
+              <p class="text-3xl font-black font-outfit text-slate-800 group-hover:scale-102 transition-transform origin-left">${data.total ?? 0}</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-slate-650 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-355 transition-all flex items-center justify-between group shadow-sm">
+            <div>
+              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Published</p>
+              <p class="text-3xl font-black font-outfit text-emerald-600 group-hover:scale-102 transition-transform origin-left">${data.published ?? 0}</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100/50 flex items-center justify-center text-emerald-600 group-hover:text-emerald-500 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-355 transition-all flex items-center justify-between group shadow-sm">
+            <div>
+              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Scheduled</p>
+              <p class="text-3xl font-black font-outfit text-indigo-600 group-hover:scale-102 transition-transform origin-left">${data.scheduled ?? 0}</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100/50 flex items-center justify-center text-indigo-650 group-hover:text-indigo-500 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-355 transition-all flex items-center justify-between group shadow-sm">
+            <div>
+              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Drafts</p>
+              <p class="text-3xl font-black font-outfit text-amber-600 group-hover:scale-102 transition-transform origin-left">${data.drafts ?? 0}</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100/50 flex items-center justify-center text-amber-600 group-hover:text-amber-500 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+            </div>
+          </div>
+        `;
+      });
+
+    // Recent Posts Loading
+    fetch('/api/admin/posts')
+      .then(r => r.json())
+      .then((posts: any[]) => {
+        if (!Array.isArray(posts) || !posts.length) {
+          document.getElementById('recent-posts')!.innerHTML = '<div class="p-8 text-slate-400 text-sm text-center font-medium font-outfit">No posts yet. <a href="/admin/posts/new" class="text-indigo-600 hover:text-indigo-800 font-bold transition-colors">Write your first article →</a></div>';
+          return;
+        }
+        const now = new Date();
+        const rows = posts.slice(0, 8).map((p: any) => {
+          let statusText = p.status;
+          let statusColor = 'bg-slate-100 text-slate-700 border-slate-200';
+          let dotColor = 'bg-slate-500';
+
+          if (p.status === 'published') {
+            const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
+            if (pubDate && pubDate > now) {
+              statusText = 'scheduled';
+              statusColor = 'bg-indigo-50 text-indigo-750 border-indigo-200/60';
+              dotColor = 'bg-indigo-500';
+            } else {
+              statusColor = 'bg-emerald-50 text-emerald-700 border-emerald-200/60';
+              dotColor = 'bg-emerald-500';
+            }
+          } else {
+            statusColor = 'bg-amber-50 text-amber-700 border-amber-200/60';
+            dotColor = 'bg-amber-500';
+          }
+
+          const catSlug = (p.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+          return `
+            <tr class="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 text-sm text-slate-800 font-semibold max-w-xs truncate">${p.title}</td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-50 text-xs font-bold text-slate-650 border border-slate-200 capitalize">${p.category || 'Uncategorized'}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full text-[10px] font-bold ${statusColor} border">
+                  <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
+                  ${statusText}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-400 whitespace-nowrap font-outfit">${p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+              <td class="px-6 py-4 text-sm text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-3">
+                  <a href="/admin/posts/edit?id=${p.id}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">Edit</a>
+                  <a href="/${catSlug}/${p.slug}" target="_blank" class="text-xs font-bold text-slate-450 hover:text-slate-700 transition-colors">View</a>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        document.getElementById('recent-posts')!.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="text-xs text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/75 font-outfit">
+                  <th class="px-6 py-4 font-bold">Title</th>
+                  <th class="px-6 py-4 font-bold">Category</th>
+                  <th class="px-6 py-4 font-bold">Status</th>
+                  <th class="px-6 py-4 font-bold">Date</th>
+                  <th class="px-6 py-4 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">${rows}</tbody>
+            </table>
+          </div>`;
+      });
+  </script>
+</AdminLayout>

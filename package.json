@@ -1,0 +1,29 @@
+{
+  "name": "mershal-new",
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/vercel": "^9.0.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "@tiptap/core": "^3.22.2",
+    "@tiptap/extension-image": "^3.22.2",
+    "@tiptap/extension-link": "^3.22.2",
+    "@tiptap/extension-placeholder": "^3.22.2",
+    "@tiptap/extension-underline": "^3.22.2",
+    "@tiptap/starter-kit": "^3.22.2",
+    "astro": "^5.0.0",
+    "firebase": "^11.2.0",
+    "firebase-admin": "^13.0.2",
+    "googleapis": "^144.0.0",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.7.3"
+  }
+}

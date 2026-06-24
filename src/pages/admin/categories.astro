@@ -1,0 +1,138 @@
+---
+export const prerender = false;
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const session = Astro.cookies.get('admin_session');
+if (session?.value !== 'authenticated') return Astro.redirect('/admin');
+---
+
+<AdminLayout title="Categories" activeNav="categories">
+  <div class="mb-8">
+    <h1 class="text-3xl font-black font-outfit text-slate-800 tracking-tight">Categories</h1>
+    <p class="text-slate-500 text-sm mt-1 font-outfit font-medium">Manage your content clusters & tags</p>
+  </div>
+
+  <div id="alert" class="hidden mb-5 p-4 rounded-xl text-xs font-semibold font-outfit border animate-in fade-in duration-200"></div>
+
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-6 max-w-5xl">
+    <!-- Left: Add New Form -->
+    <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-fit">
+      <h2 class="text-base font-bold text-slate-800 mb-5 font-outfit flex items-center gap-2">
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Add Custom Category
+      </h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 font-outfit mb-1.5">Name</label>
+          <input id="cat-name" type="text" placeholder="e.g. Finance Advice" class="w-full bg-white border border-slate-250 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-outfit placeholder-slate-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 font-outfit mb-1.5">Slug</label>
+          <input id="cat-slug" type="text" placeholder="e.g. finance-advice" class="w-full bg-white border border-slate-250 text-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-mono placeholder-slate-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 font-outfit mb-1.5">Description (optional)</label>
+          <textarea id="cat-desc" rows="2" placeholder="Brief description..." class="w-full bg-white border border-slate-250 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-outfit resize-none placeholder-slate-400"></textarea>
+        </div>
+        <button id="add-cat-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/10 text-white py-3 rounded-xl text-sm font-bold font-outfit transition-all active:scale-[0.98] cursor-pointer">
+          Add Category
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: List Grid -->
+    <div class="md:col-span-3">
+      <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-4">Content Clusters</h2>
+      <div id="cat-list" class="space-y-3">
+        <div class="p-6 text-slate-400 text-sm flex items-center justify-center gap-3 bg-white border border-slate-200 rounded-2xl shadow-sm animate-pulse">
+          <svg class="w-5 h-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <span>Loading categories...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('cat-name')?.addEventListener('input', (e) => {
+      (document.getElementById('cat-slug') as HTMLInputElement).value =
+        (e.target as HTMLInputElement).value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    });
+
+    function showAlert(msg: string, type: 'success' | 'error') {
+      const el = document.getElementById('alert')!;
+      el.textContent = msg;
+      el.className = `mb-5 p-4 rounded-xl text-xs font-semibold font-outfit border animate-in fade-in duration-200 ${type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 'bg-red-50 text-red-700 border-red-200'}`;
+      el.classList.remove('hidden');
+    }
+
+    async function loadCategories() {
+      const res = await fetch('/api/admin/categories');
+      const cats = await res.json();
+      const list = document.getElementById('cat-list')!;
+      if (!cats.length) { 
+        list.innerHTML = '<div class="p-8 bg-white border border-slate-200 rounded-2xl text-slate-400 text-sm text-center font-medium font-outfit">No categories yet.</div>'; 
+        return; 
+      }
+      list.innerHTML = cats.map((c: any) => `
+        <div class="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between hover:bg-slate-50 transition-colors shadow-sm">
+          <div class="pr-4">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-sm font-bold text-slate-800">${c.name}</p>
+              ${c.builtin ? '<span class="text-[9px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded-md font-outfit">built-in</span>' : ''}
+            </div>
+            <p class="text-[10px] text-slate-450 font-mono mt-0.5">${c.slug}</p>
+            <p class="text-xs text-slate-400 font-outfit mt-1 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              ${c.postCount || 0} articles
+            </p>
+            ${c.description ? `<p class="text-[11px] text-slate-500 mt-1 font-outfit leading-relaxed">${c.description}</p>` : ''}
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <a href="/category/${c.slug}" target="_blank" class="text-xs font-bold text-slate-450 hover:text-slate-700 transition-colors">View</a>
+            ${!c.builtin ? `<button onclick="window.deleteCategory('${c.id}', '${c.name}')" class="text-xs font-bold text-red-650 hover:text-red-850 transition-colors cursor-pointer">Delete</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('add-cat-btn')?.addEventListener('click', async () => {
+      const name = (document.getElementById('cat-name') as HTMLInputElement).value.trim();
+      const slug = (document.getElementById('cat-slug') as HTMLInputElement).value.trim();
+      const description = (document.getElementById('cat-desc') as HTMLTextAreaElement).value.trim();
+      if (!name || !slug) { showAlert('Name and slug are required', 'error'); return; }
+
+      const btn = document.getElementById('add-cat-btn') as HTMLButtonElement;
+      btn.disabled = true; btn.textContent = 'Adding...';
+
+      const res = await fetch('/api/admin/categories', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ name, slug, description }) 
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showAlert('Category added successfully!', 'success');
+        (document.getElementById('cat-name') as HTMLInputElement).value = '';
+        (document.getElementById('cat-slug') as HTMLInputElement).value = '';
+        (document.getElementById('cat-desc') as HTMLTextAreaElement).value = '';
+        loadCategories();
+      } else {
+        showAlert(data.error || 'Failed to add category', 'error');
+      }
+      btn.disabled = false; btn.textContent = 'Add Category';
+    });
+
+    (window as any).deleteCategory = async function(id: string, name: string) {
+      if (!confirm(`Are you sure you want to delete the category "${name}"?`)) return;
+      const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
+      if (res.ok) { 
+        showAlert('Category deleted.', 'success'); 
+        loadCategories(); 
+      } else {
+        showAlert('Failed to delete category.', 'error');
+      }
+    };
+
+    loadCategories();
+  </script>
+</AdminLayout>

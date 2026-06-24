@@ -1,0 +1,54 @@
+---
+interface Props {
+  name: string;
+  role?: string;
+  bio?: string;
+  avatar?: string;
+  twitter?: string;
+  linkedin?: string;
+}
+
+const {
+  name,
+  role = 'Expert Reviewer',
+  bio = 'Experienced technology analyst and SaaS strategist covering online business growth and tool scaling guides.',
+  avatar = '',
+  twitter = '#',
+  linkedin = '#',
+} = Astro.props;
+
+// Initials fallback
+const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+---
+
+<div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-5 items-center md:items-start text-center md:text-left mt-12 shadow-sm font-sans">
+  {avatar ? (
+    <img src={avatar} alt={name} class="w-16 h-16 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md flex-shrink-0" />
+  ) : (
+    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0">
+      {initials}
+    </div>
+  )}
+  
+  <div class="flex-1 space-y-2">
+    <div>
+      <span class="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 dark:text-slate-500">Written By</span>
+      <h4 class="text-lg font-black text-slate-900 dark:text-white leading-snug">{name}</h4>
+      <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">{role}</p>
+    </div>
+    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-xl">
+      {bio}
+    </p>
+    
+    <!-- Social handles -->
+    <div class="flex gap-3 justify-center md:justify-start pt-2">
+      <a href={twitter} class="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold flex items-center gap-1 transition-colors">
+        Twitter
+      </a>
+      <span class="text-slate-200 dark:text-slate-800">|</span>
+      <a href={linkedin} class="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold flex items-center gap-1 transition-colors">
+        LinkedIn
+      </a>
+    </div>
+  </div>
+</div>

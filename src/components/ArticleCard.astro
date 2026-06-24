@@ -1,0 +1,103 @@
+---
+interface Props {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  imageUrl: string;
+  category: string;
+  categorySlug: string;
+  author: string;
+  publishDate: Date | string | null;
+  readingTime: number;
+  featured?: boolean;
+}
+
+const {
+  slug,
+  title,
+  excerpt,
+  imageUrl,
+  category,
+  categorySlug,
+  author,
+  publishDate,
+  readingTime,
+} = Astro.props;
+
+function formattedDate(dateVal: Date | string | null) {
+  if (!dateVal) return '';
+  const date = typeof dateVal === 'string' ? new Date(dateVal) : dateVal;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Initials for fallback avatar
+const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+---
+
+<article class="py-6 md:py-8 border-b border-slate-100 dark:border-slate-900 first:pt-0 last:border-b-0 transition-colors duration-200">
+  <div class="flex gap-6 md:gap-8 items-start justify-between">
+    
+    <!-- Left Column: Content metadata, title and description -->
+    <div class="flex-1 min-w-0 space-y-2.5">
+      <!-- Author Row -->
+      <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-sans">
+        <a 
+          href={`/author/${author.toLowerCase().replace(/\s+/g, '-')}`}
+          class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200/40 uppercase select-none"
+        >
+          {initials}
+        </a>
+        <a 
+          href={`/author/${author.toLowerCase().replace(/\s+/g, '-')}`} 
+          class="font-bold text-slate-800 dark:text-slate-205 hover:text-slate-600 dark:hover:text-white transition-colors"
+        >
+          {author}
+        </a>
+        <span class="text-slate-300 dark:text-slate-700 select-none">•</span>
+        <time datetime={publishDate ? new Date(publishDate).toISOString() : ''}>{formattedDate(publishDate)}</time>
+      </div>
+
+      <!-- Title Link -->
+      <h3 class="font-serif font-black text-slate-900 dark:text-white leading-snug tracking-tight text-lg md:text-xl lg:text-[22px] hover:text-slate-650 dark:hover:text-indigo-400 transition-colors duration-150">
+        <a href={`/${categorySlug}/${slug}`}>
+          {title}
+        </a>
+      </h3>
+
+      <!-- Excerpt -->
+      <p class="text-slate-500 dark:text-slate-400 text-xs md:text-sm leading-relaxed line-clamp-2 md:line-clamp-3 font-medium">
+        {excerpt}
+      </p>
+
+      <!-- Footer Actions & Meta -->
+      <div class="flex items-center justify-between pt-2.5 text-[11px] text-slate-400 dark:text-slate-550 font-semibold font-sans">
+        <div class="flex items-center gap-2.5">
+          <a 
+            href={`/category/${categorySlug}`} 
+            class="px-2.5 py-0.5 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-full font-bold hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors uppercase tracking-wider text-[9px] border border-slate-100 dark:border-slate-850"
+          >
+            {category}
+          </a>
+          <span>•</span>
+          <span>{readingTime} min read</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Square Aspect Image Preview (Hidden if no imageUrl) -->
+    {imageUrl && (
+      <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-lg overflow-hidden shrink-0 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-850/60 shadow-sm">
+        <a href={`/${categorySlug}/${slug}`} class="block w-full h-full">
+          <img
+            src={imageUrl}
+            alt={title}
+            loading="lazy"
+            class="w-full h-full object-cover hover:opacity-90 transition-opacity duration-300"
+          />
+        </a>
+      </div>
+    )}
+
+  </div>
+</article>

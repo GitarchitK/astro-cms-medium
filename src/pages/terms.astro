@@ -1,0 +1,78 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout 
+  title="Terms & Conditions — Mershal" 
+  description="Terms and Conditions of use for Mershal. Read our website policies, intellectual property guidelines, and conditions of usage."
+>
+  <Header />
+
+  <main class="min-h-screen bg-white dark:bg-slate-955 transition-colors duration-200 font-sans py-16 md:py-24">
+    <div class="container mx-auto px-4 max-w-2xl">
+      
+      <!-- Header -->
+      <header class="space-y-4 pb-10 border-b border-slate-100 dark:border-slate-900 mb-12">
+        <span class="text-xs uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 font-mono">Legal Policies</span>
+        <h1 class="text-3xl md:text-5xl font-serif font-black text-slate-900 dark:text-white leading-tight tracking-tight">
+          Terms & Conditions
+        </h1>
+        <p class="text-xs text-slate-400 font-mono">Last updated: June 24, 2026</p>
+      </header>
+
+      <!-- Terms content in Serif -->
+      <article class="font-serif text-slate-750 dark:text-slate-350 text-sm md:text-base leading-relaxed space-y-8">
+        <p class="font-medium text-slate-900 dark:text-white text-base md:text-lg">
+          Welcome to Mershal. These terms govern your access and use of our content publishing platform located at <a href="https://mershal.in" class="underline font-bold">https://mershal.in</a>.
+        </p>
+
+        <p>
+          By accessing this website, we assume you accept these terms in full. If you do not agree to abide by all the terms stated on this page, do not continue to use Mershal.
+        </p>
+
+        <hr class="border-slate-100 dark:border-slate-900 my-8" />
+
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">1. Intellectual Property</h2>
+          <p>
+            Unless otherwise stated, Mershal and/or its editorial board own the intellectual property rights for all articles, blueprints, code walkthroughs, and templates published on this site. All rights are reserved.
+          </p>
+          <p class="font-bold text-slate-900 dark:text-white">You must not:</p>
+          <ul class="list-disc pl-6 space-y-2 font-sans text-xs md:text-sm text-slate-550 dark:text-slate-400">
+            <li>Republish, sell, rent, or sub-license written tutorials or review copies.</li>
+            <li>Reproduce, duplicate, or mirror content from Mershal without express attribution.</li>
+            <li>Run automated scraping engines or crawler tools to parse our articles for training artificial intelligence or Large Language Models (LLMs) without written authorization.</li>
+          </ul>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">2. Acceptable Use</h2>
+          <p>
+            You agree to use Mershal only for lawful purposes. You must not use our website to post spam, attempt brute force attacks against our administrative console (`/admin`), or inject malicious payloads into our forms.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">3. Content Liability</h2>
+          <p>
+            We are not responsible for content that appears on external websites that link to Mershal, or sites that we reference in our comparison tables. You agree to protect and defend us against all claims arising from your use of tutorials or layouts.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">4. Disclaimers</h2>
+          <p>
+            To the maximum extent permitted by applicable law, we exclude all representations and warranties relating to our website content. Technical tutorials are provided "as-is" without warranty of any kind.
+          </p>
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

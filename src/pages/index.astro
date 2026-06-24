@@ -1,0 +1,365 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import NewsletterBox from '../components/NewsletterBox.astro';
+import { adminDb } from '../lib/firebase-admin';
+
+let articles: any[] = [];
+
+if (adminDb) {
+  try {
+    const snapshot = await adminDb.collection('articles')
+      .where('status', '==', 'published')
+      .orderBy('publish_date', 'desc')
+      .limit(20)
+      .get();
+      
+    const now = new Date();
+    articles = snapshot.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        slug: d.slug || doc.id,
+        title: d.title || '',
+        excerpt: d.excerpt || '',
+        featuredImage: d.featured_image || '',
+        category: d.category || 'AI Tools',
+        categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        author: d.author || 'Editorial Team',
+        publishDate: d.publish_date?.toDate?.() || null,
+        readingTime: d.readingTime || 5,
+        status: d.status || 'published'
+      };
+    })
+    .filter(art => art.publishDate && art.publishDate <= now);
+
+  } catch (e) {
+    console.error('Home index fetch error:', e);
+  }
+}
+
+// Layout assignments
+const hasArticles = articles.length > 0;
+const heroFeatured = articles[0];
+const heroList = articles.slice(1, 4);
+const webDevArticles = articles.filter(a => a.category === 'Web Development').slice(0, 3);
+const aiArticles = articles.filter(a => a.category === 'AI Tools').slice(0, 3);
+const remainingFeed = articles.slice(4);
+
+const categoriesList = [
+  { name: 'AI Tools', slug: 'ai-tools' },
+  { name: 'Technology Guides', slug: 'technology-guides' },
+  { name: 'Software Reviews', slug: 'software-reviews' },
+  { name: 'SEO & Blogging', slug: 'seo-blogging' },
+  { name: 'Web Development', slug: 'web-development' },
+  { name: 'Productivity', slug: 'productivity' },
+  { name: 'Freelancing', slug: 'freelancing' },
+  { name: 'Side Hustles', slug: 'side-hustles' },
+  { name: 'Remote Work', slug: 'remote-work' },
+  { name: 'Startup Stories', slug: 'startup-stories' }
+];
+
+function formattedDate(dateVal: Date | string | null) {
+  if (!dateVal) return '';
+  const date = typeof dateVal === 'string' ? new Date(dateVal) : dateVal;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+---
+
+<Layout 
+  title="Mershal — Human Stories & Expert Tech Blueprints" 
+  description="Discover deep-dive blueprints and hands-on reviews about AI Tools, Web Development, Productivity, SEO, Freelancing, and Remote Work written by digital builders."
+>
+  <Header />
+
+  <main class="min-h-screen bg-[#fcfcfc] dark:bg-slate-950 transition-colors duration-200 font-sans pb-16">
+    
+    {hasArticles ? (
+      <!-- ── ACTIVE CONTENT HUB LAYOUT ── -->
+      
+      <!-- Featured Hero Hub -->
+      <section class="container mx-auto px-4 max-w-6xl py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Main Highlight -->
+          {heroFeatured && (
+            <div class="lg:col-span-2 space-y-4 group">
+              <a href={`/${heroFeatured.categorySlug}/${heroFeatured.slug}`} class="block overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-900 aspect-[16/9] shadow-sm">
+                <img 
+                  src={heroFeatured.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000'} 
+                  alt={heroFeatured.title} 
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-101"
+                />
+              </a>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2.5 text-xs text-slate-555 dark:text-slate-400 font-bold uppercase tracking-wider">
+                  <a href={`/category/${heroFeatured.categorySlug}`} class="text-indigo-650 dark:text-indigo-405 hover:underline">{heroFeatured.category}</a>
+                  <span>•</span>
+                  <span>{formattedDate(heroFeatured.publishDate)}</span>
+                </div>
+                <h2 class="text-xl md:text-3xl font-serif font-black text-slate-900 dark:text-white leading-tight hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors">
+                  <a href={`/${heroFeatured.categorySlug}/${heroFeatured.slug}`}>{heroFeatured.title}</a>
+                </h2>
+                <p class="text-slate-550 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 max-w-2xl font-medium">
+                  {heroFeatured.excerpt}
+                </p>
+                <div class="flex items-center gap-2 pt-1 text-[11px] font-bold text-slate-400">
+                  <span>By {heroFeatured.author}</span>
+                  <span>•</span>
+                  <span>{heroFeatured.readingTime} min read</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <!-- Side Stack -->
+          <div class="space-y-6 lg:border-l lg:border-slate-100 lg:dark:border-slate-900 lg:pl-8">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-900">Featured Guides</h3>
+            <div class="space-y-6">
+              {heroList.map(art => (
+                <div class="flex gap-4 items-start">
+                  <div class="space-y-1.5 flex-1 min-w-0">
+                    <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-550 dark:text-slate-450">
+                      <a href={`/category/${art.categorySlug}`} class="text-indigo-655 dark:text-indigo-400 hover:underline">{art.category}</a>
+                    </div>
+                    <h4 class="font-serif font-black text-slate-900 dark:text-white text-sm leading-snug hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors line-clamp-2">
+                      <a href={`/${art.categorySlug}/${art.slug}`}>{art.title}</a>
+                    </h4>
+                    <div class="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+                      <span>{formattedDate(art.publishDate)}</span>
+                      <span>•</span>
+                      <span>{art.readingTime} min read</span>
+                    </div>
+                  </div>
+                  {art.featuredImage && (
+                    <a href={`/${art.categorySlug}/${art.slug}`} class="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-900">
+                      <img src={art.featuredImage} alt={art.title} class="w-full h-full object-cover" />
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Web Dev Segment -->
+      {webDevArticles.length > 0 && (
+        <section class="border-t border-b border-slate-100 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10 py-12 my-8">
+          <div class="container mx-auto px-4 max-w-6xl">
+            <div class="flex items-center justify-between mb-8 pb-3 border-b border-slate-100 dark:border-slate-900">
+              <h3 class="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-slate-900 dark:bg-slate-100 rounded-full inline-block"></span>
+                💻 Web Development & Engineering
+              </h3>
+              <a href="/category/web-development" class="text-xs font-bold text-indigo-655 dark:text-indigo-400 hover:underline">View All</a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {webDevArticles.map(art => (
+                <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-900 rounded-2xl p-5 shadow-sm space-y-3.5 flex flex-col justify-between hover:shadow-md transition-shadow">
+                  <div class="space-y-2">
+                    <a href={`/${art.categorySlug}/${art.slug}`} class="block aspect-[16/10] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950">
+                      <img src={art.featuredImage} alt={art.title} class="w-full h-full object-cover" />
+                    </a>
+                    <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug hover:text-indigo-650 dark:hover:text-indigo-455 transition-colors line-clamp-2">
+                      <a href={`/${art.categorySlug}/${art.slug}`}>{art.title}</a>
+                    </h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{art.excerpt}</p>
+                  </div>
+                  <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold font-sans pt-2 border-t border-slate-50 dark:border-slate-855">
+                    <span>{formattedDate(art.publishDate)}</span>
+                    <span>•</span>
+                    <span>{art.readingTime} min read</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <!-- AI Segment -->
+      {aiArticles.length > 0 && (
+        <section class="py-12 my-4">
+          <div class="container mx-auto px-4 max-w-6xl">
+            <div class="flex items-center justify-between mb-8 pb-3 border-b border-slate-100 dark:border-slate-900">
+              <h3 class="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-slate-900 dark:bg-slate-100 rounded-full inline-block"></span>
+                🤖 AI & Automation Tools
+              </h3>
+              <a href="/category/ai-tools" class="text-xs font-bold text-indigo-655 dark:text-indigo-400 hover:underline">View All</a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {aiArticles.map(art => (
+                <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-900 rounded-2xl p-5 shadow-sm space-y-3.5 flex flex-col justify-between hover:shadow-md transition-shadow">
+                  <div class="space-y-2">
+                    <a href={`/${art.categorySlug}/${art.slug}`} class="block aspect-[16/10] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-955">
+                      <img src={art.featuredImage} alt={art.title} class="w-full h-full object-cover" />
+                    </a>
+                    <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug hover:text-indigo-650 dark:hover:text-indigo-455 transition-colors line-clamp-2">
+                      <a href={`/${art.categorySlug}/${art.slug}`}>{art.title}</a>
+                    </h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{art.excerpt}</p>
+                  </div>
+                  <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold font-sans pt-2 border-t border-slate-50 dark:border-slate-855">
+                    <span>{formattedDate(art.publishDate)}</span>
+                    <span>•</span>
+                    <span>{art.readingTime} min read</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <!-- Main Feed Row -->
+      <section class="container mx-auto px-4 max-w-6xl py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12">
+          <!-- Feed items -->
+          <div>
+            <div class="pb-3 border-b border-slate-100 dark:border-slate-900 mb-6">
+              <h3 class="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Latest Tech Guides & Reviews</h3>
+            </div>
+            
+            {remainingFeed.length === 0 ? (
+              <div class="py-12 text-center text-slate-400 text-xs uppercase tracking-widest font-black font-sans select-none">
+                End of Feed
+              </div>
+            ) : (
+              <div class="space-y-4 divide-y divide-slate-100 dark:divide-slate-900">
+                {remainingFeed.map(art => (
+                  <ArticleCard
+                    id={art.id}
+                    slug={art.slug}
+                    title={art.title}
+                    excerpt={art.excerpt}
+                    imageUrl={art.featuredImage}
+                    category={art.category}
+                    categorySlug={art.categorySlug}
+                    author={art.author}
+                    publishDate={art.publishDate}
+                    readingTime={art.readingTime}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="space-y-10">
+            <!-- Topics -->
+            <div class="space-y-4">
+              <h3 class="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-900">Recommended Topics</h3>
+              <div class="flex flex-wrap gap-2">
+                {categoriesList.map(cat => (
+                  <a 
+                    href={`/category/${cat.slug}`} 
+                    class="px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-350 text-xs font-bold rounded-full transition border border-slate-100 dark:border-slate-850 uppercase tracking-wide text-[10px]"
+                  >
+                    {cat.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            <!-- Newsletter Widget -->
+            <div class="sticky top-20">
+              <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-900 rounded-2xl p-6 shadow-sm space-y-4">
+                <div class="space-y-2">
+                  <span class="text-[9px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-300">Newsletter Digest</span>
+                  <h4 class="text-slate-900 dark:text-white font-serif font-black text-base leading-snug">Subscribe to weekly blueprints</h4>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">Join 12,000+ engineers receiving practical coding, AI integrations and SEO guides.</p>
+                </div>
+                <form id="sidebar-newsletter-form" class="space-y-3">
+                  <input 
+                    type="email" 
+                    id="sidebar-email"
+                    required
+                    placeholder="Enter email address" 
+                    class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 text-xs rounded-full px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 placeholder-slate-400 transition"
+                  />
+                  <button 
+                    type="submit" 
+                    class="w-full bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-slate-100 text-white font-bold text-xs uppercase py-2.5 rounded-full transition shadow-sm"
+                  >
+                    Subscribe
+                  </button>
+                  <p id="sidebar-newsletter-success" class="hidden text-[10px] text-emerald-600 dark:text-emerald-400 font-bold text-center">Thanks! Successfully subscribed.</p>
+                </form>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+    ) : (
+      <!-- ── MINIMALIST PUBLIC EMPTY STATE (PRODUCTION READY) ── -->
+      <div class="container mx-auto px-4 max-w-2xl py-24 md:py-32 text-center space-y-6">
+        <span class="inline-block px-3 py-1 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-2">Notice</span>
+        <h1 class="text-3xl md:text-5xl font-serif font-black text-slate-900 dark:text-white leading-tight">
+          Blueprints are on the way.
+        </h1>
+        <p class="text-sm md:text-base text-slate-500 dark:text-slate-400 leading-relaxed font-medium max-w-md mx-auto">
+          We are currently preparing our first batch of development guides, SaaS critiques, and digital automation blueprints. Check back shortly for our first set of releases.
+        </p>
+      </div>
+    )}
+
+    <!-- ── BOTTOM FULL WIDTH NEWSLETTER BANNER ── -->
+    <section class="border-t border-slate-100 dark:border-slate-900 bg-[#f9f9f9] dark:bg-slate-900/10 py-16">
+      <div class="container mx-auto px-4 max-w-4xl">
+        <NewsletterBox />
+      </div>
+    </section>
+
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  // Sidebar Newsletter submit handler
+  const form = document.getElementById('sidebar-newsletter-form') as HTMLFormElement;
+  const emailInput = document.getElementById('sidebar-email') as HTMLInputElement;
+  const successMsg = document.getElementById('sidebar-newsletter-success');
+
+  if (form && emailInput && successMsg) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) return;
+
+      const btn = form.querySelector('button');
+      if (btn) {
+        btn.innerText = 'Subscribing...';
+        btn.disabled = true;
+      }
+      successMsg.classList.add('hidden');
+
+      try {
+        const { db } = await import('../lib/firebase');
+        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+
+        await addDoc(collection(db, 'newsletter_subscribers'), {
+          email: email,
+          subscribed_at: serverTimestamp(),
+          status: 'active'
+        });
+
+        successMsg.classList.remove('hidden');
+        form.reset();
+      } catch (err) {
+        console.error('Newsletter error:', err);
+      } finally {
+        if (btn) {
+          btn.innerText = 'Subscribe';
+          btn.disabled = false;
+        }
+      }
+    });
+  }
+</script>

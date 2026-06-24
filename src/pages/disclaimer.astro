@@ -1,0 +1,68 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout 
+  title="Disclaimer — Mershal" 
+  description="Disclaimer policy for Mershal. Read about our product review objectivity, software testing limits, and general information liabilities."
+>
+  <Header />
+
+  <main class="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-205 font-sans py-16 md:py-24">
+    <div class="container mx-auto px-4 max-w-2xl">
+      
+      <!-- Header -->
+      <header class="space-y-4 pb-10 border-b border-slate-100 dark:border-slate-900 mb-12">
+        <span class="text-xs uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 font-mono">Legal Policies</span>
+        <h1 class="text-3xl md:text-5xl font-serif font-black text-slate-900 dark:text-white leading-tight tracking-tight">
+          Disclaimer
+        </h1>
+        <p class="text-xs text-slate-400 font-mono">Last updated: June 24, 2026</p>
+      </header>
+
+      <!-- Disclaimer content in Serif -->
+      <article class="font-serif text-slate-750 dark:text-slate-350 text-sm md:text-base leading-relaxed space-y-8">
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">1. General Information</h2>
+          <p>
+            All information on Mershal – <a href="https://mershal.in" class="underline font-bold">https://mershal.in</a> – is published in good faith and for general educational purposes. Mershal does not make any warranties about the completeness, reliability, or absolute accuracy of this content.
+          </p>
+          <p>
+            Any action you take based on the guides or code listings you find on this website is strictly at your own risk. Mershal will not be liable for any losses or damages in connection with the use of our guides.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">2. Technical Tutorials</h2>
+          <p>
+            Our web development, database, and system automation walkthroughs are designed for sandbox and testing environments. We strongly recommend backing up production systems before applying configurations or database migrations. We are not responsible for server failures, data leaks, or API costs incurred by replicating tutorials.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">3. Professional & Business Advice</h2>
+          <p>
+            Articles covering Freelancing, Side Hustles, Remote Work, and Startup Stories are for educational and inspirational purposes only. They do not constitute financial, investment, accounting, or legal advice. Individual success depends on skills, market conditions, and regulatory compliance; we do not guarantee specific income outcomes.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="font-serif font-black text-slate-900 dark:text-white text-xl">4. Affiliate & Advertising Disclosure</h2>
+          <p>
+            Mershal may contain sponsored listings or affiliate links. If you click on an affiliate link and complete a purchase, we may receive a small commission at no additional cost to you. This helps support the maintenance costs of our local test systems. 
+          </p>
+          <p>
+            However, our critiques remain completely independent. We rate products objectively based on design, speed, utility, and performance, regardless of potential affiliate commissions.
+          </p>
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

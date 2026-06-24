@@ -1,0 +1,306 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const categories = [
+  { name: 'AI Tools', slug: 'ai-tools' },
+  { name: 'Technology Guides', slug: 'technology-guides' },
+  { name: 'Software Reviews', slug: 'software-reviews' },
+  { name: 'SEO & Blogging', slug: 'seo-blogging' },
+  { name: 'Web Development', slug: 'web-development' },
+  { name: 'Productivity', slug: 'productivity' },
+  { name: 'Freelancing', slug: 'freelancing' },
+  { name: 'Side Hustles', slug: 'side-hustles' },
+  { name: 'Remote Work', slug: 'remote-work' },
+  { name: 'Startup Stories', slug: 'startup-stories' }
+];
+---
+
+<Layout title="Search Articles — Mershal" description="Search articles, AI tool reviews, technology guides, side hustle advice, and tutorials on Mershal.">
+  <Header />
+
+  <main class="min-h-screen py-12 bg-white dark:bg-slate-900 transition-colors duration-300 font-sans">
+    <div class="container mx-auto px-4 max-w-4xl">
+      <!-- Page Header -->
+      <div class="mb-10 text-center sm:text-left">
+        <h1 class="text-3xl md:text-4xl font-black font-outfit text-slate-900 dark:text-white tracking-tight">Search Content</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mt-2 font-outfit font-semibold">Browse and filter our knowledge base of reviews and guides</p>
+      </div>
+
+      <!-- Search Input Container -->
+      <div class="relative mb-8 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl p-4 shadow-sm">
+        <div class="relative">
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            id="search-input-page"
+            type="text"
+            placeholder="Type keywords (e.g. ChatGPT, Cursor, freelancing)..."
+            class="w-full bg-transparent text-slate-800 dark:text-white rounded-xl pl-12 pr-4 py-3.5 text-base focus:outline-none placeholder-slate-400 font-outfit font-semibold"
+          />
+        </div>
+      </div>
+
+      <!-- Filters Layout: Categories & Tags -->
+      <div class="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6 items-start mb-10">
+        
+        <!-- Left Sidebar: Category Filters -->
+        <div class="space-y-4">
+          <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-450 dark:text-slate-550 font-outfit">Categories</h3>
+          <div class="flex flex-wrap md:flex-col gap-2" id="category-filters-container">
+            <button
+              data-category=""
+              class="category-btn active px-3.5 py-2 text-xs font-bold rounded-xl border transition-all text-left font-outfit cursor-pointer flex-shrink-0"
+            >
+              All Categories
+            </button>
+            {categories.map(cat => (
+              <button
+                data-category={cat.name}
+                class="category-btn px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200/60 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all text-left font-outfit cursor-pointer flex-shrink-0"
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <!-- Right Side: Tags Cloud & Results -->
+        <div class="space-y-6">
+          <!-- Tags section -->
+          <div id="tags-cloud-container" class="space-y-3">
+            <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-455 dark:text-slate-555 font-outfit">Popular Tags</h3>
+            <div class="flex flex-wrap gap-2" id="tags-cloud">
+              <!-- Dynamically populated -->
+              <span class="text-slate-400 text-xs font-outfit">Loading tags...</span>
+            </div>
+          </div>
+
+          <!-- Results Header -->
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/65 pb-3">
+            <h4 class="text-xs uppercase font-extrabold tracking-widest text-slate-450 dark:text-slate-555 font-outfit">Results</h4>
+            <span id="results-count" class="text-xs font-bold text-slate-500 dark:text-slate-400 font-outfit">0 articles found</span>
+          </div>
+
+          <!-- Loading State -->
+          <div id="search-loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-r-2 border-indigo-650 mb-3"></div>
+            <p class="text-slate-500 text-sm font-outfit font-medium">Fetching articles...</p>
+          </div>
+
+          <!-- Results Grid -->
+          <div id="search-results-grid" class="space-y-6 hidden">
+            <!-- Cards populated dynamically -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  let articles: any[] = [];
+  let activeCategory = '';
+  let activeTag = '';
+  let queryText = '';
+
+  const searchInput = document.getElementById('search-input-page') as HTMLInputElement;
+  const resultsGrid = document.getElementById('search-results-grid') as HTMLDivElement;
+  const resultsCount = document.getElementById('results-count') as HTMLSpanElement;
+  const loadingEl = document.getElementById('search-loading') as HTMLDivElement;
+  const tagsCloud = document.getElementById('tags-cloud') as HTMLDivElement;
+  const categoryContainer = document.getElementById('category-filters-container') as HTMLDivElement;
+
+  // Render active classes for category buttons
+  function updateCategoryUI() {
+    const btns = categoryContainer.querySelectorAll('.category-btn');
+    btns.forEach(btn => {
+      const cat = btn.getAttribute('data-category');
+      if (cat === activeCategory) {
+        btn.className = "category-btn px-3.5 py-2 text-xs font-black rounded-xl border border-indigo-500/20 bg-indigo-50/70 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 transition-all text-left font-outfit cursor-pointer flex-shrink-0 shadow-inner";
+      } else {
+        btn.className = "category-btn px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200/60 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all text-left font-outfit cursor-pointer flex-shrink-0";
+      }
+    });
+  }
+
+  // Populate dynamic tags cloud
+  function buildTagsCloud() {
+    const allTagsMap = new Map<string, number>();
+    articles.forEach(art => {
+      if (Array.isArray(art.tags)) {
+        art.tags.forEach((t: string) => {
+          allTagsMap.set(t, (allTagsMap.get(t) || 0) + 1);
+        });
+      }
+    });
+
+    const sortedTags = Array.from(allTagsMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(entry => entry[0]);
+
+    if (sortedTags.length === 0) {
+      tagsCloud.innerHTML = '<span class="text-slate-400 text-xs font-outfit">No tags found.</span>';
+      return;
+    }
+
+    tagsCloud.innerHTML = `
+      <button class="tag-chip active px-3 py-1.5 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-455 text-[11px] rounded-lg border border-slate-200/60 dark:border-slate-800/80 font-bold transition-all cursor-pointer" data-tag="">All Tags</button>
+      ${sortedTags.map(tag => `
+        <button class="tag-chip px-3 py-1.5 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200/60 dark:hover:bg-slate-850/30 text-slate-600 dark:text-slate-400 text-[11px] rounded-lg border border-slate-200/60 dark:border-slate-800/80 font-bold transition-all cursor-pointer" data-tag="${tag}">#${tag}</button>
+      `).join('')}
+    `;
+
+    // Bind tag click events
+    tagsCloud.querySelectorAll('.tag-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const tag = chip.getAttribute('data-tag') || '';
+        activeTag = tag;
+        updateTagUI();
+        performSearch();
+      });
+    });
+
+    updateTagUI();
+  }
+
+  function updateTagUI() {
+    const chips = tagsCloud.querySelectorAll('.tag-chip');
+    chips.forEach(chip => {
+      const tag = chip.getAttribute('data-tag');
+      if (tag === activeTag) {
+        chip.className = "tag-chip px-3 py-1.5 bg-indigo-50/70 border-indigo-500/20 text-indigo-650 dark:bg-indigo-900/20 dark:text-indigo-400 text-[11px] rounded-lg border font-black transition-all cursor-pointer shadow-inner";
+      } else {
+        chip.className = "tag-chip px-3 py-1.5 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-450 text-[11px] rounded-lg border border-slate-200/60 dark:border-slate-800/80 font-bold transition-all cursor-pointer";
+      }
+    });
+  }
+
+  // Filter matching posts and render
+  function performSearch() {
+    const q = queryText.toLowerCase().trim();
+    
+    const filtered = articles.filter(art => {
+      const matchesSearch = !q || 
+        art.title.toLowerCase().includes(q) || 
+        art.excerpt.toLowerCase().includes(q) ||
+        art.tags?.some((t: string) => t.toLowerCase().includes(q));
+
+      const matchesCategory = !activeCategory || art.category === activeCategory;
+      const matchesTag = !activeTag || art.tags?.includes(activeTag);
+
+      return matchesSearch && matchesCategory && matchesTag;
+    });
+
+    resultsCount.textContent = `${filtered.length} article${filtered.length === 1 ? '' : 's'} found`;
+    renderResults(filtered);
+  }
+
+  function renderResults(posts: any[]) {
+    if (posts.length === 0) {
+      resultsGrid.innerHTML = `
+        <div class="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
+          <svg class="w-10 h-10 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+          <h4 class="text-slate-800 dark:text-slate-200 font-bold font-outfit text-sm">No matching articles found</h4>
+          <p class="text-slate-500 dark:text-slate-400 text-xs font-outfit mt-1">Try resetting filters or checking your spelling.</p>
+        </div>
+      `;
+      return;
+    }
+
+    resultsGrid.innerHTML = posts.map(art => {
+      const catSlug = art.category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const dateFormatted = art.publishDate
+        ? new Date(art.publishDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : '';
+
+      return `
+        <div class="p-6 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl shadow-sm hover:border-indigo-500/25 transition duration-200 flex flex-col sm:flex-row gap-4.5">
+          <div class="flex flex-col justify-between flex-1">
+            <div>
+              <div class="flex items-center gap-2.5 text-xs text-slate-450 dark:text-slate-500 font-sans mb-2 font-medium">
+                <a href="/category/${catSlug}" class="font-extrabold uppercase text-indigo-600 dark:text-indigo-400 hover:underline tracking-wider">${art.category}</a>
+                <span>•</span>
+                <span>${dateFormatted}</span>
+              </div>
+              <h3 class="font-serif font-black text-slate-900 dark:text-white leading-snug tracking-tight mb-2.5 text-lg md:text-xl hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                <a href="/${catSlug}/${art.slug}">${art.title}</a>
+              </h3>
+              <p class="text-slate-500 dark:text-slate-405 text-sm leading-relaxed line-clamp-2">${art.excerpt}</p>
+            </div>
+            <div class="flex flex-wrap gap-1.5 mt-4">
+              ${(art.tags || []).map((t: string) => `
+                <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-[10px] rounded-md font-bold text-slate-400 dark:text-slate-500 border border-slate-200/40 dark:border-slate-800/40">#${t}</span>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Initial Fetch Setup
+  async function initializeSearch() {
+    try {
+      const res = await fetch('/api/articles');
+      if (res.ok) {
+        articles = await res.json();
+      }
+
+      // Check URL parameters
+      const params = new URLSearchParams(window.location.search);
+      queryText = params.get('q') || '';
+      activeCategory = params.get('category') || '';
+
+      if (searchInput) {
+        searchInput.value = queryText;
+      }
+
+      loadingEl.classList.add('hidden');
+      resultsGrid.classList.remove('hidden');
+
+      buildTagsCloud();
+      updateCategoryUI();
+      performSearch();
+    } catch (err) {
+      console.error(err);
+      loadingEl.innerHTML = '<p class="text-red-500 text-sm font-outfit font-semibold">Failed to fetch articles. Please try reloading the page.</p>';
+    }
+  }
+
+  // Bind Category Clicks
+  categoryContainer.querySelectorAll('.category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.getAttribute('data-category') || '';
+      activeCategory = cat;
+      updateCategoryUI();
+      performSearch();
+      
+      // Update URL query parameter
+      const params = new URLSearchParams(window.location.search);
+      if (cat) params.set('category', cat);
+      else params.delete('category');
+      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    });
+  });
+
+  // Bind Search Input typing
+  searchInput?.addEventListener('input', () => {
+    queryText = searchInput.value;
+    performSearch();
+    
+    // Update URL query parameter
+    const params = new URLSearchParams(window.location.search);
+    if (queryText) params.set('q', queryText);
+    else params.delete('q');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+  });
+
+  initializeSearch();
+</script>

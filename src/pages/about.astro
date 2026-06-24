@@ -1,0 +1,100 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout 
+  title="Our Story — Mershal" 
+  description="Discover the story, editorial principles, and vision behind Mershal. We publish high-fidelity blueprints, code walkthroughs, and software reviews."
+>
+  <Header />
+
+  <main class="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-200 font-sans py-16 md:py-24">
+    <div class="container mx-auto px-4 max-w-2xl">
+      
+      <!-- Typographic Header Section -->
+      <header class="space-y-6 pb-12 border-b border-slate-100 dark:border-slate-900">
+        <span class="text-xs uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 font-mono">Our Mission</span>
+        <h1 class="text-4xl md:text-6xl font-serif font-black text-slate-900 dark:text-white leading-[1.1] tracking-tight">
+          Everyone’s stories and ideas, shared.
+        </h1>
+        <p class="text-lg md:text-xl font-serif italic text-slate-500 dark:text-slate-400 leading-relaxed">
+          Mershal is an open editorial blueprint for web developers, software engineers, SEO strategists, and digital builders.
+        </p>
+      </header>
+
+      <!-- Main Editorial Body -->
+      <section class="py-12 space-y-8 font-serif text-slate-750 dark:text-slate-300 text-base md:text-lg leading-relaxed">
+        <p>
+          We believe that what you read matters. The digital frontier is changing rapidly, flooded by automated content that skims the surface. Developers, side hustlers, and founders need genuine, hands-on insights and step-by-step guides written by experienced engineers and writers.
+        </p>
+        
+        <p>
+          Mershal was founded as a high-density reference platform. Here, you will find exhaustive, hands-on software reviews, digital automation blueprints, and full-stack coding tutorials. We test setups in local sandboxes and production environments before publishing, ensuring every listing, config file, and tutorial works out of the box.
+        </p>
+
+        <!-- Elegant Quote Section -->
+        <blockquote class="border-l-3 border-slate-900 dark:border-slate-300 pl-6 my-8 font-serif italic text-xl text-slate-900 dark:text-white leading-relaxed">
+          "The best way to predict the future is to build it. We write for those who write code, build SaaS platforms, and launch digital assets."
+        </blockquote>
+
+        <p>
+          We maintain absolute editorial independence. Our software evaluations, tool comparisons, and guides are objective, highlighting potential drawbacks and pricing quirks alongside performance gains.
+        </p>
+      </section>
+
+      <!-- Content Pillars -->
+      <section class="py-12 border-t border-slate-100 dark:border-slate-900 space-y-8">
+        <h2 class="text-xs uppercase font-bold tracking-widest text-slate-900 dark:text-white font-sans">Core Editorial Pillars</h2>
+        
+        <div class="space-y-6">
+          <div class="space-y-1">
+            <h3 class="font-serif font-black text-slate-900 dark:text-white text-lg">AI Tools & Automation Hacks</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-sans font-medium">
+              Objective walkthroughs on generative models, dev APIs, serverless AI integration, and workflow automation blueprints.
+            </p>
+          </div>
+          
+          <div class="space-y-1">
+            <h3 class="font-serif font-black text-slate-900 dark:text-white text-lg">Modern Web Engineering</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-sans font-medium">
+              Rigorous coding tutorials covering Astro, React, serverless functions, database queries, and styling configurations.
+            </p>
+          </div>
+
+          <div class="space-y-1">
+            <h3 class="font-serif font-black text-slate-900 dark:text-white text-lg">SEO & Blogging Blueprint</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-sans font-medium">
+              Data-driven guidelines for speeding up page load metrics, configuring structured schema graphs, and optimization rules.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Values -->
+      <section class="py-12 border-t border-slate-100 dark:border-slate-900 space-y-6">
+        <h2 class="text-xs uppercase font-bold tracking-widest text-slate-900 dark:text-white font-sans">Editorial Principles</h2>
+        <ul class="space-y-4 font-serif text-slate-700 dark:text-slate-400 text-sm md:text-base leading-relaxed">
+          <li class="flex items-start gap-3">
+            <span class="text-slate-400 font-mono mt-0.5">01.</span>
+            <span><strong>Technical Rigor:</strong> We run configurations, test endpoints, and verify codes before publishing. No speculative tutorials.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-slate-400 font-mono mt-0.5">02.</span>
+            <span><strong>Clarity First:</strong> We structure guides with clear table of contents, descriptive headers, and structured markup.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-slate-400 font-mono mt-0.5">03.</span>
+            <span><strong>Integrity:</strong> If a tool features hidden costs, critical bugs, or performance issues, we document them objectively.</span>
+          </li>
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

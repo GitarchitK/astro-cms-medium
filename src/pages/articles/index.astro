@@ -1,0 +1,83 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { adminDb } from '../../lib/firebase-admin';
+
+let articles: any[] = [];
+
+if (adminDb) {
+  try {
+    const snapshot = await adminDb.collection('articles')
+      .where('status', '==', 'published')
+      .orderBy('publish_date', 'desc')
+      .get();
+      
+    const now = new Date();
+    articles = snapshot.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        slug: d.slug || doc.id,
+        title: d.title || '',
+        excerpt: d.excerpt || '',
+        featuredImage: d.featured_image || '',
+        category: d.category || 'AI Tools',
+        categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        author: d.author || 'Mershal Editorial Team',
+        publishDate: d.publish_date?.toDate?.() || null,
+        readingTime: d.readingTime || 5
+      };
+    })
+    .filter(art => art.publishDate && art.publishDate <= now);
+  } catch (e) {
+    console.error('Error fetching articles list:', e);
+  }
+}
+---
+
+<Layout title="All Articles — Mershal" description="Browse all our authority guides, software reviews, technology walkthroughs, remote work tips, and side hustle guides.">
+  <Header />
+
+  <main class="min-h-screen py-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300 font-sans">
+    <div class="container mx-auto px-4 max-w-7xl">
+      <!-- Page Title -->
+      <div class="mb-10 text-center">
+        <span class="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/25 text-indigo-650 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-2">Publishing Directory</span>
+        <h1 class="text-3xl md:text-5xl font-black font-outfit text-slate-900 dark:text-white tracking-tight">All Articles</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-lg mx-auto font-medium">Browse our full archive of expert reviews, business guides, and web tutorials.</p>
+      </div>
+
+      <!-- Articles List -->
+      {articles.length > 0 ? (
+        <div class="max-w-4xl mx-auto space-y-4 divide-y divide-slate-100 dark:divide-slate-900">
+          {articles.map(art => (
+            <ArticleCard
+              id={art.id}
+              slug={art.slug}
+              title={art.title}
+              excerpt={art.excerpt}
+              imageUrl={art.featuredImage}
+              category={art.category}
+              categorySlug={art.categorySlug}
+              author={art.author}
+              publishDate={art.publishDate}
+              readingTime={art.readingTime}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-20 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl max-w-lg mx-auto shadow-sm">
+          <svg class="w-12 h-12 text-slate-400 mx-auto mb-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+          <h3 class="text-slate-800 dark:text-slate-200 text-base font-bold font-outfit">No articles found</h3>
+          <p class="text-slate-500 dark:text-slate-405 text-xs font-outfit mt-1">Articles will be listed here once they are published.</p>
+        </div>
+      )}
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

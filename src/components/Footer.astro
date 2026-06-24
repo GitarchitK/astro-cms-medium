@@ -1,0 +1,76 @@
+---
+const categories = [
+  { name: 'AI Tools', href: '/category/ai-tools' },
+  { name: 'Technology Guides', href: '/category/technology-guides' },
+  { name: 'Software Reviews', href: '/category/software-reviews' },
+  { name: 'SEO & Blogging', href: '/category/seo-blogging' },
+  { name: 'Web Development', href: '/category/web-development' },
+  { name: 'Productivity', href: '/category/productivity' },
+];
+---
+
+<footer class="bg-white dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/50 pt-16 pb-8 transition-colors duration-300">
+  <div class="container mx-auto px-4 max-w-7xl">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+      
+      <!-- Column 1: Info -->
+      <div class="space-y-4">
+        <a href="/" class="flex items-center gap-2 group">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-sm shadow-[0_4px_10px_rgba(79,70,229,0.25)]">M</div>
+          <span class="text-lg font-black tracking-wider text-slate-800 dark:text-white font-outfit">Mershal</span>
+        </a>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+          Expert reviews, step-by-step guides, and workflows on AI Tools, Software development, Blogging SEO, and digital productivity stacks.
+        </p>
+      </div>
+
+      <!-- Column 2: Categories -->
+      <div>
+        <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-800 dark:text-slate-200 mb-4 font-outfit">Categories</h3>
+        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+          {categories.map(cat => (
+            <li>
+              <a href={cat.href} class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{cat.name}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Column 3: Platform -->
+      <div>
+        <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-800 dark:text-slate-200 mb-4 font-outfit">Platform</h3>
+        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+          <li>
+            <a href="/about" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">About Us</a>
+          </li>
+          <li>
+            <a href="/contact" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact Us</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Column 4: Legal & Guidelines -->
+      <div>
+        <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-800 dark:text-slate-200 mb-4 font-outfit">Legal</h3>
+        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+          <li>
+            <a href="/privacy" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy Policy</a>
+          </li>
+          <li>
+            <a href="/terms" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms & Conditions</a>
+          </li>
+          <li>
+            <a href="/disclaimer" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Disclaimer</a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Divider -->
+    <div class="border-t border-slate-200/50 dark:border-slate-800/50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 dark:text-slate-550 text-[10px] uppercase font-extrabold tracking-widest font-outfit">
+      <p>&copy; {new Date().getFullYear()} Mershal. All rights reserved.</p>
+      <p>Optimized for Google AdSense & Search</p>
+    </div>
+  </div>
+</footer>
