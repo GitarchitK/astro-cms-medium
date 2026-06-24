@@ -3,76 +3,118 @@ import { adminDb } from '../lib/firebase-admin';
 
 export const GET: APIRoute = async () => {
   const baseUrl = 'https://mershal.in';
-  
-  // 1. Static URLs
+  const now = new Date();
+
+  // 1. Static Pages
   const staticPages = [
-    '',
-    '/articles',
-    '/about',
-    '/contact',
-    '/privacy',
-    '/terms',
-    '/disclaimer'
+    { path: '', changefreq: 'daily', priority: '1.0', lastmod: now.toISOString() },
+    { path: '/articles', changefreq: 'daily', priority: '0.9', lastmod: now.toISOString() },
+    { path: '/about', changefreq: 'weekly', priority: '0.7', lastmod: now.toISOString() },
+    { path: '/contact', changefreq: 'monthly', priority: '0.6', lastmod: now.toISOString() },
+    { path: '/privacy', changefreq: 'monthly', priority: '0.5', lastmod: now.toISOString() },
+    { path: '/terms', changefreq: 'monthly', priority: '0.5', lastmod: now.toISOString() },
+    { path: '/disclaimer', changefreq: 'monthly', priority: '0.5', lastmod: now.toISOString() }
   ];
 
-  // 2. Category Hubs
-  const categories = [
-    '/category/ai-tools',
-    '/category/technology-guides',
-    '/category/software-reviews',
-    '/category/seo-blogging',
-    '/category/web-development',
-    '/category/productivity',
-    '/category/freelancing',
-    '/category/side-hustles',
-    '/category/remote-work',
-    '/category/startup-stories'
+  // 2. Default Built-in Categories
+  const defaultCategories = [
+    'ai-tools',
+    'technology-guides',
+    'software-reviews',
+    'seo-blogging',
+    'web-development',
+    'productivity',
+    'freelancing',
+    'side-hustles',
+    'remote-work',
+    'startup-stories'
   ];
 
-  let articleUrls: string[] = [];
+  let categorySlugs = [...defaultCategories];
+  let articleUrls: { path: string; lastmod: string; changefreq: string; priority: string }[] = [];
 
   if (adminDb) {
     try {
+      // Fetch custom categories dynamically from Firestore
+      const categoriesSnap = await adminDb.collection('categories').get();
+      if (!categoriesSnap.empty) {
+        categoriesSnap.docs.forEach(doc => {
+          const slug = doc.data().slug;
+          if (slug && !categorySlugs.includes(slug)) {
+            categorySlugs.push(slug);
+          }
+        });
+      }
+
+      // Fetch published articles
       const snapshot = await adminDb.collection('articles')
         .where('status', '==', 'published')
         .orderBy('publish_date', 'desc')
         .get();
 
-      const now = new Date();
       articleUrls = snapshot.docs
         .map(doc => {
           const d = doc.data();
-          const pDate = d.publish_date?.toDate?.() || null;
+          let pDate = null;
+          if (d.publish_date) {
+            if (typeof d.publish_date.toDate === 'function') {
+              pDate = d.publish_date.toDate();
+            } else {
+              pDate = new Date(d.publish_date);
+            }
+          }
+
+          let uDate = pDate;
+          if (d.updated_date) {
+            if (typeof d.updated_date.toDate === 'function') {
+              uDate = d.updated_date.toDate();
+            } else {
+              uDate = new Date(d.updated_date);
+            }
+          }
+
           return {
             slug: d.slug || doc.id,
             categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            publishDate: pDate
+            publishDate: pDate,
+            modifiedDate: uDate || pDate || now
           };
         })
         // Filter out drafts/future scheduled in memory
         .filter(art => art.publishDate && art.publishDate <= now)
-        .map(art => `/${art.categorySlug}/${art.slug}`);
+        .map(art => ({
+          path: `/${art.categorySlug}/${art.slug}`,
+          lastmod: art.modifiedDate.toISOString(),
+          changefreq: 'weekly',
+          priority: '0.8'
+        }));
     } catch (e) {
-      console.error('Sitemap generation firestore error:', e);
+      console.error('Sitemap dynamic generation firestore error:', e);
     }
   }
 
-  // Combine all URLs
-  const allUrls = [...staticPages, ...categories, ...articleUrls];
+  // Combine categories
+  const categoryPages = categorySlugs.map(slug => ({
+    path: `/category/${slug}`,
+    changefreq: 'weekly',
+    priority: '0.7',
+    lastmod: now.toISOString()
+  }));
+
+  // Combine all sitemap entries
+  const allUrls = [...staticPages, ...categoryPages, ...articleUrls];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${allUrls
     .map(
-      url => {
-        const isArticle = articleUrls.includes(url);
-        return `
+      url => `
   <url>
-    <loc>${baseUrl}${url}</loc>
-    <changefreq>${url === '' || url === '/articles' ? 'daily' : 'weekly'}</changefreq>
-    <priority>${url === '' ? '1.0' : isArticle ? '0.8' : '0.5'}</priority>
-  </url>`;
-      }
+    <loc>${baseUrl}${url.path}</loc>
+    <lastmod>${url.lastmod}</lastmod>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>`
     )
     .join('')}
 </urlset>`;
