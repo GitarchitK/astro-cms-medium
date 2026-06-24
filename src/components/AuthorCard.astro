@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+
 interface Props {
   name: string;
   role?: string;
@@ -23,7 +25,7 @@ const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase
 
 <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-5 items-center md:items-start text-center md:text-left mt-12 shadow-sm font-sans">
   {avatar ? (
-    <img src={avatar} alt={name} class="w-16 h-16 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md flex-shrink-0" />
+    <Image src={avatar} alt={name} width={64} height={64} class="w-16 h-16 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md flex-shrink-0" />
   ) : (
     <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0">
       {initials}

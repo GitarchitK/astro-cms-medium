@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+
 interface Props {
   id: string;
   slug: string;
@@ -89,10 +91,11 @@ const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCa
     {imageUrl && (
       <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-lg overflow-hidden shrink-0 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-850/60 shadow-sm">
         <a href={`/${categorySlug}/${slug}`} class="block w-full h-full">
-          <img
+          <Image
             src={imageUrl}
             alt={title}
-            loading="lazy"
+            width={128}
+            height={128}
             class="w-full h-full object-cover hover:opacity-90 transition-opacity duration-300"
           />
         </a>

@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import ArticleCard from '../components/ArticleCard.astro';
@@ -74,6 +75,11 @@ function formattedDate(dateVal: Date | string | null) {
   title="Mershal — Human Stories & Expert Tech Blueprints" 
   description="Discover deep-dive blueprints and hands-on reviews about AI Tools, Web Development, Productivity, SEO, Freelancing, and Remote Work written by digital builders."
 >
+  {heroFeatured && (
+    <Fragment slot="head">
+      <link rel="preload" as="image" href={heroFeatured.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000'} fetchpriority="high" />
+    </Fragment>
+  )}
   <Header />
 
   <main class="min-h-screen bg-[#fcfcfc] dark:bg-slate-950 transition-colors duration-200 font-sans pb-16">
@@ -88,10 +94,16 @@ function formattedDate(dateVal: Date | string | null) {
           {heroFeatured && (
             <div class="lg:col-span-2 space-y-4 group">
               <a href={`/${heroFeatured.categorySlug}/${heroFeatured.slug}`} class="block overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-900 aspect-[16/9] shadow-sm">
-                <img 
+                <Image 
                   src={heroFeatured.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000'} 
                   alt={heroFeatured.title} 
+                  width={800}
+                  height={450}
+                  widths={[400, 800, 1200]}
+                  sizes="(max-width: 800px) 100vw, 800px"
                   class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-101"
+                  loading="eager"
+                  fetchpriority="high"
                 />
               </a>
               <div class="space-y-2">
@@ -136,7 +148,7 @@ function formattedDate(dateVal: Date | string | null) {
                   </div>
                   {art.featuredImage && (
                     <a href={`/${art.categorySlug}/${art.slug}`} class="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-900">
-                      <img src={art.featuredImage} alt={art.title} class="w-full h-full object-cover" />
+                      <Image src={art.featuredImage} alt={art.title} width={64} height={64} class="w-full h-full object-cover" />
                     </a>
                   )}
                 </div>
@@ -162,7 +174,7 @@ function formattedDate(dateVal: Date | string | null) {
                 <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-900 rounded-2xl p-5 shadow-sm space-y-3.5 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div class="space-y-2">
                     <a href={`/${art.categorySlug}/${art.slug}`} class="block aspect-[16/10] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950">
-                      <img src={art.featuredImage} alt={art.title} class="w-full h-full object-cover" />
+                      <Image src={art.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} alt={art.title} width={360} height={225} class="w-full h-full object-cover" />
                     </a>
                     <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug hover:text-indigo-650 dark:hover:text-indigo-455 transition-colors line-clamp-2">
                       <a href={`/${art.categorySlug}/${art.slug}`}>{art.title}</a>
@@ -197,7 +209,7 @@ function formattedDate(dateVal: Date | string | null) {
                 <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-900 rounded-2xl p-5 shadow-sm space-y-3.5 flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div class="space-y-2">
                     <a href={`/${art.categorySlug}/${art.slug}`} class="block aspect-[16/10] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-955">
-                      <img src={art.featuredImage} alt={art.title} class="w-full h-full object-cover" />
+                      <Image src={art.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} alt={art.title} width={360} height={225} class="w-full h-full object-cover" />
                     </a>
                     <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug hover:text-indigo-650 dark:hover:text-indigo-455 transition-colors line-clamp-2">
                       <a href={`/${art.categorySlug}/${art.slug}`}>{art.title}</a>

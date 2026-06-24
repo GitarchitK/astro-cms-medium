@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
+import { Image } from 'astro:assets';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ArticleCard from '../../components/ArticleCard.astro';
@@ -132,7 +133,7 @@ const initials = currentAuthor.name.split(' ').map(n => n[0]).join('').slice(0, 
         <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.03),transparent_40%)] pointer-events-none"></div>
         
         {currentAuthor.avatar ? (
-          <img src={currentAuthor.avatar} alt={currentAuthor.name} class="w-24 h-24 rounded-3xl object-cover border-4 border-slate-50 dark:border-slate-800 shadow-md flex-shrink-0" />
+          <Image src={currentAuthor.avatar} alt={currentAuthor.name} width={96} height={96} class="w-24 h-24 rounded-3xl object-cover border-4 border-slate-50 dark:border-slate-800 shadow-md flex-shrink-0" />
         ) : (
           <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-650 via-indigo-650 to-violet-600 flex items-center justify-center text-white font-black text-3xl shadow-md flex-shrink-0">
             {initials}
