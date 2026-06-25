@@ -8,161 +8,611 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
 
 <AdminLayout title="Dashboard" activeNav="dashboard">
   <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-black font-outfit text-slate-800 tracking-tight">Dashboard</h1>
-    <p class="text-slate-500 text-sm mt-1 font-outfit font-medium">Welcome back, Editor 👋</p>
-  </div>
-
-  <!-- Stats Grid (Dynamically Loaded) -->
-  <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
-    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
-    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
-    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 animate-pulse h-28 shadow-sm"></div>
-  </div>
-
-  <!-- Quick Actions -->
-  <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm mb-10 max-w-4xl">
-    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-4">Quick Actions</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <a href="/admin/posts/new" class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/10 text-white px-5 py-3.5 rounded-xl text-sm font-bold font-outfit transition-all active:scale-[0.98]">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Write New Post
-      </a>
-      <a href="/admin/posts" class="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-250 text-slate-700 px-5 py-3.5 rounded-xl text-sm font-bold font-outfit transition-all">
-        Manage Articles
-      </a>
-      <a href="/admin/categories" class="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-250 text-slate-700 px-5 py-3.5 rounded-xl text-sm font-bold font-outfit transition-all">
-        Manage Categories
-      </a>
+  <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight">Dashboard</h1>
+      <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Manage your digital publication settings and content</p>
     </div>
+    <div class="text-xs text-slate-450 font-mono" id="current-time">Loading server time...</div>
   </div>
 
-  <!-- Recent Posts -->
-  <div>
-    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-4">Recent Articles</h2>
-    <div id="recent-posts" class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
-      <div class="p-6 text-slate-400 text-sm flex items-center justify-center gap-3">
-        <svg class="w-5 h-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <span>Loading articles...</span>
+  <!-- Welcome Panel (Dismissible) -->
+  <div id="welcome-panel" class="bg-white rounded-md border border-[#c3c4c7] p-6 mb-6 relative shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
+    <button id="dismiss-welcome" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" title="Dismiss Welcome Panel">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <h2 class="text-xl font-bold font-outfit text-slate-800 mb-1">Welcome to your Mershal CMS Dashboard!</h2>
+    <p class="text-slate-500 text-xs font-outfit max-w-2xl mb-4 leading-relaxed">
+      We’ve assembled some links to get you started. Write a new article, manage your cluster categories, or customize your site metadata settings easily.
+    </p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+      <div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-3">Get Started</h3>
+        <a href="/admin/posts/new" class="inline-flex items-center gap-2 bg-[#2271b1] hover:bg-[#135e96] text-white px-4 py-2 rounded text-xs font-bold font-outfit transition-all active:scale-[0.98]">
+          Write Your First Post
+        </a>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-3">Next Steps</h3>
+        <ul class="space-y-2 text-xs font-outfit text-[#2271b1]">
+          <li><a href="/admin/posts" class="hover:underline flex items-center gap-1.5 font-medium"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 4a2 2 0 012 2v7a2 2 0 01-2 2H9a2 2 0 01-2-2v-1"/></svg> Manage existing articles</a></li>
+          <li><a href="/admin/categories" class="hover:underline flex items-center gap-1.5 font-medium"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> Setup cluster categories</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-3">More Actions</h3>
+        <ul class="space-y-2 text-xs font-outfit text-[#2271b1]">
+          <li><a href="/admin/media" class="hover:underline flex items-center gap-1.5 font-medium"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> Browse media files</a></li>
+          <li><a href="/admin/settings" class="hover:underline flex items-center gap-1.5 font-medium"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg> Edit site metadata</a></li>
+        </ul>
       </div>
     </div>
   </div>
 
+  <!-- Traffic Overview Widget -->
+  <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6 overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+      <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Page Views (Last 30 Days)</h2>
+      <div id="analytics-badge-container"></div>
+    </div>
+    
+    <div class="p-5 relative select-none">
+      <!-- Loading overlay -->
+      <div id="chart-loader" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center text-slate-400 font-outfit text-xs gap-2">
+        <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span>Fetching visitor data...</span>
+      </div>
+
+      <!-- Warning message if config missing / auth failed -->
+      <div id="analytics-warning-msg" class="hidden mb-3 p-3 bg-amber-50 border-l-4 border-amber-400 text-amber-700 text-[10px] leading-relaxed rounded-r shadow-sm">
+        <strong>Google Analytics not connected</strong>. Displaying sample data. Set your GA4 Property ID in <a href="/admin/settings" class="underline font-bold text-blue-600">Settings</a> and verify access to link your account.
+      </div>
+
+      <!-- Graph Wrapper -->
+      <div class="w-full h-48 md:h-60 relative" id="chart-wrapper">
+        <svg id="analytics-svg-chart" viewBox="0 0 600 240" class="w-full h-full text-slate-450 font-mono text-[9px] font-bold">
+          <!-- Injected SVG elements -->
+        </svg>
+        <!-- Interactive HTML Tooltip -->
+        <div id="chart-tooltip" class="absolute hidden bg-slate-900/95 text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg pointer-events-none font-outfit border border-slate-700/50 z-20 transition-all duration-75">
+          <div class="font-bold text-slate-350" id="tooltip-date"></div>
+          <div class="text-blue-400 font-extrabold mt-0.5" id="tooltip-views"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Widgets Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Column 1 -->
+    <div class="space-y-6">
+      
+      <!-- At a Glance Widget -->
+      <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">At a Glance</h2>
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        </div>
+        <div class="p-4 grid grid-cols-2 gap-4 text-xs font-outfit">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-blue-650" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 4a2 2 0 012 2v7a2 2 0 01-2 2H9a2 2 0 01-2-2v-1"/></svg>
+            <div>
+              <p class="font-bold text-slate-700" id="stat-published">Loading...</p>
+              <p class="text-[10px] text-slate-450 font-semibold uppercase tracking-wider">Published</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <p class="font-bold text-slate-700" id="stat-scheduled">Loading...</p>
+              <p class="text-[10px] text-slate-450 font-semibold uppercase tracking-wider">Scheduled</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-amber-650" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <div>
+              <p class="font-bold text-slate-700" id="stat-drafts">Loading...</p>
+              <p class="text-[10px] text-slate-450 font-semibold uppercase tracking-wider">Drafts</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-purple-650" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <div>
+              <p class="font-bold text-slate-700" id="stat-total">Loading...</p>
+              <p class="text-[10px] text-slate-450 font-semibold uppercase tracking-wider">Total Articles</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 py-2.5 border-t border-slate-100 bg-slate-50 text-[10px] font-bold text-slate-450 font-outfit uppercase tracking-wide">
+          Running on Astro 5.0 & Firebase Firestore
+        </div>
+      </div>
+
+      <!-- Recent Activity Widget -->
+      <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Recent Activity</h2>
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div id="recent-activity-list" class="divide-y divide-slate-100 max-h-[320px] overflow-y-auto">
+          <div class="p-6 text-slate-400 text-xs flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span>Loading recent activity...</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Column 2 -->
+    <div class="space-y-6">
+      
+      <!-- Quick Draft Widget -->
+      <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Quick Draft</h2>
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </div>
+        <form id="quick-draft-form" class="p-4 space-y-3.5">
+          <div id="quick-draft-alert" class="hidden p-3 rounded text-xs font-outfit font-semibold border"></div>
+          <div>
+            <input type="text" id="draft-title" placeholder="Title" class="w-full bg-white border border-slate-300 text-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-blue-500 font-outfit placeholder-slate-400" required />
+          </div>
+          <div>
+            <textarea id="draft-content" rows="4" placeholder="What’s on your mind?" class="w-full bg-white border border-slate-300 text-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-blue-500 font-outfit placeholder-slate-400 resize-none" required></textarea>
+          </div>
+          <button type="submit" id="draft-submit-btn" class="bg-[#2271b1] hover:bg-[#135e96] text-white px-3.5 py-1.5 rounded text-xs font-bold font-outfit transition-all active:scale-[0.98] cursor-pointer">
+            Save Draft
+          </button>
+        </form>
+      </div>
+
+      <!-- Site Health & System Status Widget -->
+      <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Site Health & Status</h2>
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="p-4 space-y-3.5 text-xs font-outfit">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-550 font-medium">Firestore Database Connection</span>
+            <span id="health-db" class="inline-flex items-center gap-1 font-bold text-emerald-600"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Connected</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-550 font-medium">Firebase Storage Engine</span>
+            <span id="health-storage" class="inline-flex items-center gap-1 font-bold text-emerald-600"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-550 font-medium">Admin Authentication Session</span>
+            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Authenticated</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-550 font-medium">Active Deployment Host</span>
+            <span class="font-mono text-[10px] text-slate-500 font-semibold bg-slate-100 border px-1.5 py-0.5 rounded">Vercel Serverless</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
   <script>
-    // Stats Loading
-    fetch('/api/admin/stats')
-      .then(r => r.json())
-      .then(data => {
-        document.getElementById('stats-grid')!.innerHTML = `
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-350 transition-all flex items-center justify-between group shadow-sm">
-            <div>
-              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Total Articles</p>
-              <p class="text-3xl font-black font-outfit text-slate-800 group-hover:scale-102 transition-transform origin-left">${data.total ?? 0}</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-slate-650 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-            </div>
-          </div>
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-355 transition-all flex items-center justify-between group shadow-sm">
-            <div>
-              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Published</p>
-              <p class="text-3xl font-black font-outfit text-emerald-600 group-hover:scale-102 transition-transform origin-left">${data.published ?? 0}</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100/50 flex items-center justify-center text-emerald-600 group-hover:text-emerald-500 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-          </div>
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-355 transition-all flex items-center justify-between group shadow-sm">
-            <div>
-              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Scheduled</p>
-              <p class="text-3xl font-black font-outfit text-indigo-600 group-hover:scale-102 transition-transform origin-left">${data.scheduled ?? 0}</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100/50 flex items-center justify-center text-indigo-650 group-hover:text-indigo-500 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
-          </div>
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-slate-355 transition-all flex items-center justify-between group shadow-sm">
-            <div>
-              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest font-outfit mb-1">Drafts</p>
-              <p class="text-3xl font-black font-outfit text-amber-600 group-hover:scale-102 transition-transform origin-left">${data.drafts ?? 0}</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100/50 flex items-center justify-center text-amber-600 group-hover:text-amber-500 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
-            </div>
-          </div>
-        `;
-      });
+    // Server time display
+    const timeEl = document.getElementById('current-time');
+    if (timeEl) {
+      timeEl.textContent = 'Server Time: ' + new Date().toLocaleString('en-US', { hour12: true, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setInterval(() => {
+        timeEl.textContent = 'Server Time: ' + new Date().toLocaleString('en-US', { hour12: true, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }, 1000);
+    }
 
-    // Recent Posts Loading
-    fetch('/api/admin/posts')
-      .then(r => r.json())
-      .then((posts: any[]) => {
-        if (!Array.isArray(posts) || !posts.length) {
-          document.getElementById('recent-posts')!.innerHTML = '<div class="p-8 text-slate-400 text-sm text-center font-medium font-outfit">No posts yet. <a href="/admin/posts/new" class="text-indigo-600 hover:text-indigo-800 font-bold transition-colors">Write your first article →</a></div>';
-          return;
+    // Welcome panel dismissal handler
+    const welcomePanel = document.getElementById('welcome-panel');
+    const dismissBtn = document.getElementById('dismiss-welcome');
+    
+    // Check local storage for dismissal
+    if (localStorage.getItem('dismiss-wp-welcome') === 'true') {
+      welcomePanel?.classList.add('hidden');
+    }
+
+    dismissBtn?.addEventListener('click', () => {
+      welcomePanel?.classList.add('hidden');
+      localStorage.setItem('dismiss-wp-welcome', 'true');
+    });
+
+    // Fetch Stats & Health
+    async function initDashboard() {
+      try {
+        const rStats = await fetch('/api/admin/stats');
+        const stats = await rStats.json();
+
+        if (rStats.ok) {
+          document.getElementById('stat-total')!.textContent = stats.total ?? 0;
+          document.getElementById('stat-published')!.textContent = stats.published ?? 0;
+          document.getElementById('stat-scheduled')!.textContent = stats.scheduled ?? 0;
+          document.getElementById('stat-drafts')!.textContent = stats.drafts ?? 0;
+        } else {
+          throw new Error('Stats API failed');
         }
-        const now = new Date();
-        const rows = posts.slice(0, 8).map((p: any) => {
-          let statusText = p.status;
-          let statusColor = 'bg-slate-100 text-slate-700 border-slate-200';
-          let dotColor = 'bg-slate-500';
+      } catch (err) {
+        console.error(err);
+        document.querySelectorAll('[id^="stat-"]').forEach(el => el.textContent = 'Error');
+        document.getElementById('health-db')!.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Disconnected';
+        document.getElementById('health-db')!.className = 'inline-flex items-center gap-1 font-bold text-red-650';
+      }
 
-          if (p.status === 'published') {
-            const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
-            if (pubDate && pubDate > now) {
-              statusText = 'scheduled';
-              statusColor = 'bg-indigo-50 text-indigo-750 border-indigo-200/60';
-              dotColor = 'bg-indigo-500';
-            } else {
-              statusColor = 'bg-emerald-50 text-emerald-700 border-emerald-200/60';
-              dotColor = 'bg-emerald-500';
-            }
-          } else {
-            statusColor = 'bg-amber-50 text-amber-700 border-amber-200/60';
-            dotColor = 'bg-amber-500';
+      // Fetch Recent Posts Activity
+      try {
+        const rPosts = await fetch('/api/admin/posts');
+        const posts = await rPosts.json();
+        const listContainer = document.getElementById('recent-activity-list')!;
+
+        if (rPosts.ok && Array.isArray(posts)) {
+          if (!posts.length) {
+            listContainer.innerHTML = '<div class="p-6 text-slate-450 text-xs text-center font-medium font-outfit">No posts created yet.</div>';
+            return;
           }
 
-          const catSlug = (p.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const rows = posts.slice(0, 5).map((p: any) => {
+            const dateStr = p.publishedAt
+              ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : '—';
+            
+            let statusBadge = '';
+            if (p.status === 'draft') {
+              statusBadge = '<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold uppercase tracking-wider scale-90 origin-left">Draft</span>';
+            } else {
+              const now = new Date();
+              const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
+              if (pubDate && pubDate > now) {
+                statusBadge = '<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-750 border border-indigo-200/50 text-[10px] font-bold uppercase tracking-wider scale-90 origin-left">Scheduled</span>';
+              } else {
+                statusBadge = '<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-250 text-[10px] font-bold uppercase tracking-wider scale-90 origin-left">Published</span>';
+              }
+            }
 
-          return `
-            <tr class="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
-              <td class="px-6 py-4 text-sm text-slate-800 font-semibold max-w-xs truncate">${p.title}</td>
-              <td class="px-6 py-4">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-50 text-xs font-bold text-slate-650 border border-slate-200 capitalize">${p.category || 'Uncategorized'}</span>
-              </td>
-              <td class="px-6 py-4">
-                <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full text-[10px] font-bold ${statusColor} border">
-                  <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
-                  ${statusText}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-slate-400 whitespace-nowrap font-outfit">${p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-              <td class="px-6 py-4 text-sm text-right whitespace-nowrap">
-                <div class="inline-flex items-center gap-3">
-                  <a href="/admin/posts/edit?id=${p.id}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">Edit</a>
-                  <a href="/${catSlug}/${p.slug}" target="_blank" class="text-xs font-bold text-slate-450 hover:text-slate-700 transition-colors">View</a>
+            return `
+              <div class="p-3.5 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-outfit">
+                <div class="min-w-0 flex-1">
+                  <a href="/admin/posts/edit?id=${p.id}" class="font-bold text-slate-750 hover:text-blue-650 transition-colors line-clamp-1">${p.title}</a>
+                  <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-1 flex-wrap">
+                    <span>${dateStr}</span>
+                    <span>•</span>
+                    <span>${p.category || 'Uncategorized'}</span>
+                    <span>•</span>
+                    <span>By ${p.author || 'Editor'}</span>
+                  </div>
                 </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
+                <div class="shrink-0 flex items-center gap-2">
+                  ${statusBadge}
+                  <a href="/admin/posts/edit?id=${p.id}" class="text-blue-600 hover:underline font-bold text-[11px]" title="Edit post">Edit</a>
+                </div>
+              </div>
+            `;
+          }).join('');
 
-        document.getElementById('recent-posts')!.innerHTML = `
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="text-xs text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/75 font-outfit">
-                  <th class="px-6 py-4 font-bold">Title</th>
-                  <th class="px-6 py-4 font-bold">Category</th>
-                  <th class="px-6 py-4 font-bold">Status</th>
-                  <th class="px-6 py-4 font-bold">Date</th>
-                  <th class="px-6 py-4 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">${rows}</tbody>
-            </table>
-          </div>`;
+          listContainer.innerHTML = rows;
+        } else {
+          listContainer.innerHTML = '<div class="p-6 text-red-600 text-xs text-center font-medium font-outfit">Failed to load recent activity.</div>';
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('recent-activity-list')!.innerHTML = '<div class="p-6 text-red-600 text-xs text-center font-medium font-outfit">Failed to load recent activity.</div>';
+      }
+
+      // Load analytics data
+      await loadAnalytics();
+    }
+
+    // Load Google Analytics Data
+    async function loadAnalytics() {
+      const loader = document.getElementById('chart-loader');
+      const warningMsg = document.getElementById('analytics-warning-msg');
+      const badgeContainer = document.getElementById('analytics-badge-container');
+
+      try {
+        const res = await fetch('/api/admin/analytics');
+        const data = await res.json();
+        
+        if (loader) loader.classList.add('hidden');
+
+        if (res.ok && data.report) {
+          if (data.configRequired) {
+            if (warningMsg) warningMsg.classList.remove('hidden');
+            if (badgeContainer) {
+              badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-250 text-[10px] font-bold uppercase tracking-wider">Demo Mode</span>';
+            }
+          } else {
+            if (warningMsg) warningMsg.classList.add('hidden');
+            if (badgeContainer) {
+              badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-250 text-[10px] font-bold uppercase tracking-wider">Live GA4</span>';
+            }
+          }
+
+          renderSvgChart(data.report);
+        } else {
+          throw new Error(data.error || 'Failed to load analytics report');
+        }
+      } catch (err: any) {
+        console.error('Failed to load analytics:', err);
+        if (loader) loader.classList.add('hidden');
+        if (warningMsg) {
+          warningMsg.innerHTML = `<strong>Failed to load Google Analytics</strong>: ${err.message || 'connection error'}`;
+          warningMsg.classList.remove('hidden');
+        }
+      }
+    }
+
+    // Render Custom SVG Analytics Chart
+    function renderSvgChart(report: Array<{ date: string; views: number }>) {
+      const svg = document.getElementById('analytics-svg-chart');
+      if (!svg) return;
+
+      const width = 600;
+      const height = 240;
+      const padding = { top: 20, right: 20, bottom: 35, left: 40 };
+
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+
+      // Extract values
+      const views = report.map(r => r.views);
+      const maxViews = Math.max(...views, 10); // avoid 0 division
+
+      // Build points
+      const points = report.map((r, i) => {
+        const x = padding.left + (i / (report.length - 1)) * chartWidth;
+        const y = (height - padding.bottom) - (r.views / maxViews) * chartHeight;
+        return { x, y, date: r.date, views: r.views };
       });
+
+      // Clear SVG first
+      svg.innerHTML = '';
+
+      // Create defs for gradients
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.innerHTML = `
+        <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2563eb" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="#2563eb" stop-opacity="0" />
+        </linearGradient>
+      `;
+      svg.appendChild(defs);
+
+      // Y Axis Gridlines & Labels
+      for (let i = 0; i <= 4; i++) {
+        const val = Math.round((maxViews / 4) * i);
+        const y = (height - padding.bottom) - (i / 4) * chartHeight;
+
+        // Line
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', padding.left.toString());
+        line.setAttribute('y1', y.toString());
+        line.setAttribute('x2', (width - padding.right).toString());
+        line.setAttribute('y2', y.toString());
+        line.setAttribute('stroke', '#e2e8f0');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('stroke-dasharray', '2 4');
+        svg.appendChild(line);
+
+        // Label
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', (padding.left - 8).toString());
+        text.setAttribute('y', (y + 3).toString());
+        text.setAttribute('text-anchor', 'end');
+        text.setAttribute('fill', '#94a3b8');
+        text.setAttribute('class', 'font-sans text-[8px] font-semibold');
+        text.textContent = val.toLocaleString();
+        svg.appendChild(text);
+      }
+
+      // X Axis labels (5 labels spaced out)
+      const step = Math.floor(report.length / 4);
+      const labelIndices = [0, step, step * 2, step * 3, report.length - 1];
+      labelIndices.forEach(idx => {
+        if (idx >= report.length) return;
+        const pt = points[idx];
+        const rawDate = pt.date; // YYYYMMDD
+        let label = rawDate;
+        if (rawDate.length === 8) {
+          const year = parseInt(rawDate.substring(0, 4));
+          const month = parseInt(rawDate.substring(4, 6)) - 1;
+          const day = parseInt(rawDate.substring(6, 8));
+          const dateObj = new Date(year, month, day);
+          label = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', pt.x.toString());
+        text.setAttribute('y', (height - padding.bottom + 15).toString());
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#94a3b8');
+        text.setAttribute('class', 'font-sans text-[8px] font-semibold');
+        text.textContent = label;
+        svg.appendChild(text);
+      });
+
+      // Path data for the line
+      const linePathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+      const fillPathData = `${linePathData} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
+
+      // Draw Fill Area
+      const fillPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      fillPath.setAttribute('d', fillPathData);
+      fillPath.setAttribute('fill', 'url(#chart-grad)');
+      svg.appendChild(fillPath);
+
+      // Draw Stroke Line
+      const strokePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      strokePath.setAttribute('d', linePathData);
+      strokePath.setAttribute('fill', 'none');
+      strokePath.setAttribute('stroke', '#3b82f6');
+      strokePath.setAttribute('stroke-width', '2');
+      strokePath.setAttribute('stroke-linejoin', 'round');
+      strokePath.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(strokePath);
+
+      // Interactive components
+      const hoverLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      hoverLine.setAttribute('y1', padding.top.toString());
+      hoverLine.setAttribute('y2', (height - padding.bottom).toString());
+      hoverLine.setAttribute('stroke', '#64748b');
+      hoverLine.setAttribute('stroke-width', '1');
+      hoverLine.setAttribute('stroke-dasharray', '3 3');
+      hoverLine.style.display = 'none';
+      svg.appendChild(hoverLine);
+
+      const hoverDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      hoverDot.setAttribute('r', '5');
+      hoverDot.setAttribute('fill', '#3b82f6');
+      hoverDot.setAttribute('stroke', '#ffffff');
+      hoverDot.setAttribute('stroke-width', '2');
+      hoverDot.style.display = 'none';
+      svg.appendChild(hoverDot);
+
+      // Tooltip positioning helper
+      const tooltip = document.getElementById('chart-tooltip');
+      const tooltipDate = document.getElementById('tooltip-date');
+      const tooltipViews = document.getElementById('tooltip-views');
+
+      svg.addEventListener('mousemove', (e) => {
+        const rect = svg.getBoundingClientRect();
+        // Calculate mouse X relative to the SVG width
+        const clientX = e.clientX - rect.left;
+        const svgX = (clientX / rect.width) * width;
+
+        if (svgX < padding.left || svgX > width - padding.right) {
+          hideTooltip();
+          return;
+        }
+
+        // Find closest point
+        let closestPt = points[0];
+        let minDist = Infinity;
+        for (const pt of points) {
+          const dist = Math.abs(pt.x - svgX);
+          if (dist < minDist) {
+            minDist = dist;
+            closestPt = pt;
+          }
+        }
+
+        // Show line & dot
+        hoverLine.setAttribute('x1', closestPt.x.toString());
+        hoverLine.setAttribute('x2', closestPt.x.toString());
+        hoverLine.style.display = 'block';
+
+        hoverDot.setAttribute('cx', closestPt.x.toString());
+        hoverDot.setAttribute('cy', closestPt.y.toString());
+        hoverDot.style.display = 'block';
+
+        // Update tooltip content & position
+        if (tooltip && tooltipDate && tooltipViews) {
+          let readableDate = closestPt.date;
+          if (closestPt.date.length === 8) {
+            const year = parseInt(closestPt.date.substring(0, 4));
+            const month = parseInt(closestPt.date.substring(4, 6)) - 1;
+            const day = parseInt(closestPt.date.substring(6, 8));
+            readableDate = new Date(year, month, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+          }
+
+          tooltipDate.textContent = readableDate;
+          tooltipViews.textContent = `${closestPt.views.toLocaleString()} Page Views`;
+          
+          tooltip.classList.remove('hidden');
+
+          // Position tooltip
+          const tooltipWidth = tooltip.offsetWidth;
+          const tooltipHeight = tooltip.offsetHeight;
+
+          // Convert SVG point to client relative coordinates inside the wrapper
+          const wrapper = document.getElementById('chart-wrapper')!;
+          const wrapperRect = wrapper.getBoundingClientRect();
+          const targetLeft = (closestPt.x / width) * wrapperRect.width - tooltipWidth / 2;
+          const targetTop = (closestPt.y / height) * wrapperRect.height - tooltipHeight - 10;
+
+          // Limit within bounds
+          const leftBound = Math.max(0, Math.min(wrapperRect.width - tooltipWidth, targetLeft));
+          const topBound = Math.max(0, targetTop);
+
+          tooltip.style.left = `${leftBound}px`;
+          tooltip.style.top = `${topBound}px`;
+        }
+      });
+
+      svg.addEventListener('mouseleave', hideTooltip);
+
+      function hideTooltip() {
+        hoverLine.style.display = 'none';
+        hoverDot.style.display = 'none';
+        if (tooltip) tooltip.classList.add('hidden');
+      }
+    }
+
+    // Quick Draft Form Submission Handler
+    const draftForm = document.getElementById('quick-draft-form') as HTMLFormElement;
+    draftForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const alertEl = document.getElementById('quick-draft-alert')!;
+      const submitBtn = document.getElementById('draft-submit-btn') as HTMLButtonElement;
+      
+      const title = (document.getElementById('draft-title') as HTMLInputElement).value.trim();
+      const content = (document.getElementById('draft-content') as HTMLTextAreaElement).value.trim();
+      
+      if (!title || !content) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+      alertEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/admin/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            slug: '',
+            excerpt: content.substring(0, 140) + (content.length > 140 ? '...' : ''),
+            content: `<p>${content.replace(/\n/g, '</p><p>')}</p>`,
+            category: 'AI Tools',
+            tags: [],
+            featuredImage: '',
+            status: 'draft',
+            publishDate: null
+          })
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          alertEl.textContent = 'Draft saved successfully!';
+          alertEl.className = 'p-3 rounded text-xs font-outfit font-semibold border bg-emerald-50 text-emerald-700 border-emerald-250';
+          alertEl.classList.remove('hidden');
+          
+          // Clear inputs
+          draftForm.reset();
+          
+          // Reload activity & stats
+          initDashboard();
+        } else {
+          throw new Error(data.error || 'Failed to save draft');
+        }
+      } catch (err: any) {
+        console.error('Quick draft save failed:', err);
+        alertEl.textContent = err.message || 'Error occurred while saving draft';
+        alertEl.className = 'p-3 rounded text-xs font-outfit font-semibold border bg-red-50 text-red-700 border-red-200';
+        alertEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save Draft';
+      }
+    });
+
+    // Initialize Dashboard data
+    initDashboard();
   </script>
 </AdminLayout>

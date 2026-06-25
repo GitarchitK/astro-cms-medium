@@ -7,79 +7,97 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
 ---
 
 <AdminLayout title="Posts Management" activeNav="posts">
-  <!-- Header Section -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h1 class="text-3xl font-black font-outfit text-slate-800 tracking-tight">Posts</h1>
-      <p class="text-slate-500 text-sm mt-1 flex items-center gap-2 font-outfit">
-        <span id="post-count" class="font-bold text-slate-800">Loading...</span>
-        <span class="text-slate-300">•</span>
-        <span>Manage and publish your articles</span>
-      </p>
-    </div>
-    <a href="/admin/posts/new" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/10 text-white px-5 py-2.5 rounded-xl text-sm font-bold font-outfit transition-all active:scale-[0.98]">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-      Create Article
-    </a>
-  </div>
-
-  <!-- Filters Section -->
-  <div class="bg-white border border-slate-200/80 rounded-2xl p-4 mb-6 shadow-sm">
-    <div class="flex flex-col sm:flex-row gap-4">
-      <div class="relative flex-1">
-        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input id="search" type="text" placeholder="Search by title or slug..." class="w-full bg-white border border-slate-200 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-slate-400 font-outfit" />
-      </div>
-      <div class="flex gap-3 flex-wrap">
-        <div class="relative">
-          <select id="filter-status" class="bg-white border border-slate-200 text-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[140px] appearance-none cursor-pointer font-outfit">
-            <option value="">All Statuses</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-          </select>
-          <svg class="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-        </div>
-        <div class="relative">
-          <select id="filter-category" class="bg-white border border-slate-200 text-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[170px] appearance-none cursor-pointer font-outfit">
-            <option value="">All Categories</option>
-            <option value="AI Tools">AI Tools</option>
-            <option value="Technology Guides">Technology Guides</option>
-            <option value="Freelancing">Freelancing</option>
-            <option value="Remote Work">Remote Work</option>
-            <option value="Side Hustles">Side Hustles</option>
-            <option value="Software Reviews">Software Reviews</option>
-            <option value="SEO & Blogging">SEO & Blogging</option>
-            <option value="Web Development">Web Development</option>
-            <option value="Startup Stories">Startup Stories</option>
-            <option value="Productivity">Productivity</option>
-          </select>
-          <svg class="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-        </div>
-      </div>
+      <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight flex items-center gap-2">
+        Posts
+        <a href="/admin/posts/new" class="bg-white hover:bg-slate-50 border border-[#8c8f94] hover:border-blue-600 text-blue-600 text-xs px-2.5 py-1 rounded transition-colors select-none font-bold font-outfit">Add New</a>
+      </h1>
+      <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Manage, edit, filter, and schedule your publication articles</p>
     </div>
   </div>
 
-  <!-- Table Section -->
-  <div class="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+  <!-- Alert Container -->
+  <div id="posts-alert" class="hidden mb-4 p-4 rounded text-xs font-semibold font-outfit border animate-in fade-in duration-200"></div>
+
+  <!-- Status Tabs -->
+  <div class="flex border-b border-[#c3c4c7] text-xs font-outfit mb-4 overflow-x-auto whitespace-nowrap bg-white border rounded shadow-sm">
+    <button type="button" id="tab-all" class="px-4 py-3 border-b-2 border-blue-600 text-blue-600 font-bold focus:outline-none cursor-pointer">
+      All <span class="text-slate-400 font-normal" id="tab-count-all">(0)</span>
+    </button>
+    <button type="button" id="tab-published" class="px-4 py-3 border-b-2 border-transparent text-slate-600 hover:text-blue-600 font-medium focus:outline-none cursor-pointer">
+      Published <span class="text-slate-400 font-normal" id="tab-count-published">(0)</span>
+    </button>
+    <button type="button" id="tab-scheduled" class="px-4 py-3 border-b-2 border-transparent text-slate-600 hover:text-blue-600 font-medium focus:outline-none cursor-pointer">
+      Scheduled <span class="text-slate-400 font-normal" id="tab-count-scheduled">(0)</span>
+    </button>
+    <button type="button" id="tab-draft" class="px-4 py-3 border-b-2 border-transparent text-slate-600 hover:text-blue-600 font-medium focus:outline-none cursor-pointer">
+      Drafts <span class="text-slate-400 font-normal" id="tab-count-draft">(0)</span>
+    </button>
+  </div>
+
+  <!-- Filter and Search Bar -->
+  <div class="bg-white border border-[#c3c4c7] p-3 rounded shadow-sm mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-outfit">
+    <!-- Filters on left -->
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Bulk Actions -->
+      <select id="bulk-action" class="bg-white border border-[#8c8f94] text-slate-700 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
+        <option value="">Bulk Actions</option>
+        <option value="delete">Move to Trash</option>
+      </select>
+      <button id="apply-bulk" class="bg-white hover:bg-slate-50 border border-[#8c8f94] text-slate-700 font-bold px-3 py-1.5 rounded transition-all active:scale-[0.98] cursor-pointer">
+        Apply
+      </button>
+
+      <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+      <!-- Dates Dropdown -->
+      <select id="filter-date" class="bg-white border border-[#8c8f94] text-slate-700 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
+        <option value="">All Dates</option>
+      </select>
+
+      <!-- Categories Dropdown -->
+      <select id="filter-category" class="bg-white border border-[#8c8f94] text-slate-700 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
+        <option value="">All Categories</option>
+      </select>
+
+      <button id="apply-filter" class="bg-white hover:bg-slate-50 border border-[#8c8f94] text-slate-700 font-bold px-3 py-1.5 rounded transition-all active:scale-[0.98] cursor-pointer">
+        Filter
+      </button>
+    </div>
+
+    <!-- Search on right -->
+    <div class="relative w-full md:w-64">
+      <input type="text" id="search-input" placeholder="Search Posts..." class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded pl-3 pr-8 py-1.5 focus:outline-none focus:border-blue-500 placeholder-slate-400 font-outfit" />
+      <svg class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </div>
+  </div>
+
+  <!-- Posts Table -->
+  <div class="bg-white border border-[#c3c4c7] rounded shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse">
+      <table class="w-full text-left border-collapse text-xs font-outfit">
         <thead>
-          <tr class="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-550 uppercase tracking-widest font-outfit">
-            <th class="px-6 py-4 w-1/3 font-bold">Article Details</th>
-            <th class="px-6 py-4 font-bold">Category</th>
-            <th class="px-6 py-4 font-bold">Status</th>
-            <th class="px-6 py-4 font-bold">Word Count</th>
-            <th class="px-6 py-4 font-bold">Published Date</th>
-            <th class="px-6 py-4 text-right font-bold">Actions</th>
+          <tr class="bg-slate-50 border-b border-[#c3c4c7] text-[#50575e] uppercase tracking-wide font-bold select-none">
+            <th class="px-4 py-3 w-10 text-center">
+              <input type="checkbox" id="select-all-posts" class="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer" />
+            </th>
+            <th class="px-4 py-3 font-bold">Title</th>
+            <th class="px-4 py-3 font-bold w-32">Author</th>
+            <th class="px-4 py-3 font-bold w-40">Categories</th>
+            <th class="px-4 py-3 font-bold w-24 text-center">Words</th>
+            <th class="px-4 py-3 font-bold w-44">Date</th>
           </tr>
         </thead>
         <tbody id="posts-table-body" class="divide-y divide-slate-100">
           <tr>
-            <td colspan="6" class="px-6 py-16 text-center">
-              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 border border-slate-100 mb-4">
-                <svg class="w-5 h-5 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <td colspan="6" class="px-4 py-16 text-center text-slate-400 font-medium">
+              <div class="flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span>Loading articles...</span>
               </div>
-              <p class="text-slate-500 text-sm font-outfit">Loading articles...</p>
             </td>
           </tr>
         </tbody>
@@ -89,110 +107,270 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
 
   <script>
     let allPosts: any[] = [];
+    let categories: any[] = [];
+    let currentStatusFilter = 'all'; // all, published, scheduled, draft
     let isDeleting = false;
 
+    // Load Categories from API for Filter dropdown
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/admin/categories');
+        if (res.ok) {
+          categories = await res.json();
+          const filterDropdown = document.getElementById('filter-category') as HTMLSelectElement;
+          if (filterDropdown) {
+            filterDropdown.innerHTML = '<option value="">All Categories</option>' + 
+              categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load categories for filtering:', err);
+      }
+    }
+
+    // Load Posts list
     async function loadPosts() {
       try {
         const res = await fetch('/api/admin/posts');
-        allPosts = await res.json();
-        updateCount();
-        renderTable(allPosts);
-      } catch (error) {
-        console.error('Failed to load posts:', error);
-        document.getElementById('posts-table-body')!.innerHTML = `
-          <tr>
-            <td colspan="6" class="px-6 py-12 text-center text-red-650 font-outfit font-semibold">
-              Failed to load articles. Please try refreshing the page.
-            </td>
-          </tr>
-        `;
+        if (res.ok) {
+          allPosts = await res.json();
+          buildDateFilter();
+          updateTabCounts();
+          applyFiltersAndRender();
+        } else {
+          throw new Error('Failed to fetch posts');
+        }
+      } catch (err) {
+        console.error('Error loading posts:', err);
+        const tbody = document.getElementById('posts-table-body')!;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-650 font-bold">Failed to load articles. Please refresh the page.</td></tr>`;
       }
     }
 
-    function updateCount() {
-      const countEl = document.getElementById('post-count');
-      if (countEl) {
-        countEl.textContent = `${allPosts.length} article${allPosts.length === 1 ? '' : 's'}`;
-      }
+    // Populate the dates dropdown with Month Year options dynamically based on post list
+    function buildDateFilter() {
+      const dropdown = document.getElementById('filter-date') as HTMLSelectElement;
+      if (!dropdown) return;
+
+      const dates = allPosts
+        .map(p => p.publishedAt ? new Date(p.publishedAt) : null)
+        .filter((d): d is Date => d !== null);
+
+      // Extract unique Month Year strings
+      const monthYears = Array.from(new Set(dates.map(d => {
+        return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      })));
+
+      dropdown.innerHTML = '<option value="">All Dates</option>' +
+        monthYears.map(my => `<option value="${my}">${my}</option>`).join('');
     }
 
-    function renderTable(posts: any[]) {
-      const tbody = document.getElementById('posts-table-body');
-      if (!tbody) return;
+    // Update the tab counts
+    function updateTabCounts() {
+      const now = new Date();
+      let published = 0;
+      let scheduled = 0;
+      let drafts = 0;
 
+      allPosts.forEach(p => {
+        if (p.status === 'draft') {
+          drafts++;
+        } else {
+          const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
+          if (pubDate && pubDate > now) {
+            scheduled++;
+          } else {
+            published++;
+          }
+        }
+      });
+
+      document.getElementById('tab-count-all')!.textContent = `(${allPosts.length})`;
+      document.getElementById('tab-count-published')!.textContent = `(${published})`;
+      document.getElementById('tab-count-scheduled')!.textContent = `(${scheduled})`;
+      document.getElementById('tab-count-draft')!.textContent = `(${drafts})`;
+    }
+
+    // Set tab active state styles
+    function setTabActive(tabId: string) {
+      const tabs = ['tab-all', 'tab-published', 'tab-scheduled', 'tab-draft'];
+      tabs.forEach(id => {
+        const el = document.getElementById(id)!;
+        if (id === tabId) {
+          el.className = 'px-4 py-3 border-b-2 border-blue-600 text-blue-600 font-bold focus:outline-none cursor-pointer';
+        } else {
+          el.className = 'px-4 py-3 border-b-2 border-transparent text-slate-600 hover:text-blue-600 font-medium focus:outline-none cursor-pointer';
+        }
+      });
+    }
+
+    // Main filtering logic
+    function applyFiltersAndRender() {
+      const search = (document.getElementById('search-input') as HTMLInputElement).value.toLowerCase();
+      const dateVal = (document.getElementById('filter-date') as HTMLSelectElement).value;
+      const categoryVal = (document.getElementById('filter-category') as HTMLSelectElement).value;
+      const now = new Date();
+
+      const filtered = allPosts.filter(p => {
+        // Status Filter
+        let matchesStatus = true;
+        if (currentStatusFilter === 'published') {
+          const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
+          matchesStatus = p.status === 'published' && (!pubDate || pubDate <= now);
+        } else if (currentStatusFilter === 'scheduled') {
+          const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
+          matchesStatus = p.status === 'published' && pubDate !== null && pubDate > now;
+        } else if (currentStatusFilter === 'draft') {
+          matchesStatus = p.status === 'draft';
+        }
+
+        // Search Filter
+        const matchesSearch = !search ||
+          p.title.toLowerCase().includes(search) ||
+          (p.slug && p.slug.toLowerCase().includes(search));
+
+        // Date Filter
+        let matchesDate = true;
+        if (dateVal && p.publishedAt) {
+          const pubDate = new Date(p.publishedAt);
+          const monthYearStr = pubDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          matchesDate = monthYearStr === dateVal;
+        }
+
+        // Category Filter
+        const matchesCategory = !categoryVal || p.category === categoryVal;
+
+        return matchesStatus && matchesSearch && matchesDate && matchesCategory;
+      });
+
+      renderPosts(filtered);
+    }
+
+    // Render posts to the table DOM
+    function renderPosts(posts: any[]) {
+      const tbody = document.getElementById('posts-table-body')!;
       if (!posts.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="px-6 py-16 text-center">
-              <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 border border-slate-150 mb-4">
-                <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-              </div>
-              <h3 class="text-slate-800 text-lg font-bold font-outfit mb-1">No articles found</h3>
-              <p class="text-slate-505 text-sm font-outfit">Try adjusting your filters or create a new article.</p>
-            </td>
-          </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-12 text-center text-slate-450 font-medium">No posts found matching the filters.</td></tr>`;
         return;
       }
 
       const now = new Date();
-      tbody.innerHTML = posts.map((p: any) => {
+      tbody.innerHTML = posts.map(p => {
         let statusBadge = '';
-        if (p.status === 'published') {
+        let dateLabel = 'Published';
+        if (p.status === 'draft') {
+          statusBadge = '<span class="text-slate-450 border border-slate-200 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-[9px] bg-slate-50 select-none ml-1.5">Draft</span>';
+          dateLabel = 'Last Modified';
+        } else {
           const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
           if (pubDate && pubDate > now) {
-            statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>Scheduled</span>`;
-          } else {
-            statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Published</span>`;
+            statusBadge = '<span class="text-indigo-650 border border-indigo-200 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-[9px] bg-indigo-50 select-none ml-1.5">Scheduled</span>';
+            dateLabel = 'Scheduled';
           }
-        } else {
-          statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Draft</span>`;
         }
 
-        const dateFormatted = p.publishedAt 
-          ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
-          : '<span class="text-slate-400 font-outfit">—</span>';
+        const pubDateFormatted = p.publishedAt
+          ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : '—';
 
         const catSlug = (p.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
+        // Create standard row + quick-edit drawer placeholder (hidden by default)
         return `
-          <tr class="group hover:bg-slate-50/50 transition-colors">
-            <td class="px-6 py-4.5">
-              <div class="flex flex-col gap-1">
-                <a href="/admin/posts/edit?id=${p.id}" class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1">${p.title}</a>
-                <div class="flex items-center gap-2 text-xs text-slate-400 font-mono">
-                  <span class="truncate max-w-[240px]">/${catSlug}/${p.slug}</span>
-                  <a href="/${catSlug}/${p.slug}" target="_blank" class="text-slate-400 hover:text-indigo-600 transition-colors" title="Open page in new tab">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-                  </a>
+          <tr id="row-${p.id}" class="group hover:bg-[#f6f7f7] transition-colors relative">
+            <td class="px-4 py-4 text-center">
+              <input type="checkbox" name="post-select" value="${p.id}" class="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer" />
+            </td>
+            <td class="px-4 py-4 min-w-[200px]">
+              <div class="flex items-center flex-wrap">
+                <a href="/admin/posts/edit?id=${p.id}" class="font-bold text-[#2271b1] hover:text-[#135e96] text-sm break-all line-clamp-1">${p.title}</a>
+                ${statusBadge}
+              </div>
+              
+              <!-- Hover Action Links (WordPress style) -->
+              <div class="flex items-center gap-2 text-[10px] font-semibold text-[#50575e] mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap select-none">
+                <a href="/admin/posts/edit?id=${p.id}" class="text-[#2271b1] hover:text-[#135e96]">Edit</a>
+                <span class="text-slate-300">|</span>
+                <button onclick="window.openQuickEdit('${p.id}')" class="text-[#2271b1] hover:text-[#135e96] cursor-pointer focus:outline-none">Quick Edit</button>
+                <span class="text-slate-300">|</span>
+                <button onclick="window.trashPost('${p.id}')" class="text-red-650 hover:text-red-800 cursor-pointer focus:outline-none">Trash</button>
+                <span class="text-slate-300">|</span>
+                <a href="/${catSlug}/${p.slug}" target="_blank" class="text-[#2271b1] hover:text-[#135e96]">View</a>
+              </div>
+            </td>
+            <td class="px-4 py-4 text-slate-550 font-medium">${p.author || 'Editor'}</td>
+            <td class="px-4 py-4 text-slate-550 font-medium">
+              <span class="inline-flex px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">${p.category || 'Uncategorized'}</span>
+            </td>
+            <td class="px-4 py-4 text-center font-mono font-semibold text-slate-450">${p.wordCount || 0}</td>
+            <td class="px-4 py-4 text-slate-400">
+              <span class="font-medium text-slate-600 block">${dateLabel}</span>
+              <span class="text-[10px] font-semibold font-mono block mt-0.5">${pubDateFormatted}</span>
+            </td>
+          </tr>
+          
+          <!-- Inline Quick Edit Drawer -->
+          <tr id="quick-edit-${p.id}" class="hidden bg-[#f0f6fa] border-y border-[#c3c4c7] shadow-inner">
+            <td colspan="6" class="px-6 py-4">
+              <div class="space-y-4">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest font-outfit">Quick Edit</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Col 1 -->
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Title</label>
+                      <input type="text" id="qe-title-${p.id}" value="${p.title}" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 font-outfit" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Slug</label>
+                      <input type="text" id="qe-slug-${p.id}" value="${p.slug || ''}" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 font-mono" />
+                    </div>
+                  </div>
+
+                  <!-- Col 2 -->
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Date & Time</label>
+                      <input type="datetime-local" id="qe-date-${p.id}" value="${p.publishedAt ? p.publishedAt.substring(0, 16) : ''}" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 font-mono" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Author</label>
+                      <input type="text" id="qe-author-${p.id}" value="${p.author || 'Editorial Team'}" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 font-outfit" />
+                    </div>
+                  </div>
+
+                  <!-- Col 3 -->
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Category</label>
+                      <select id="qe-category-${p.id}" class="w-full bg-white border border-[#8c8f94] text-slate-700 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 cursor-pointer">
+                        ${categories.map(c => `<option value="${c.name}" ${c.name === p.category ? 'selected' : ''}>${c.name}</option>`).join('')}
+                      </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Status</label>
+                        <select id="qe-status-${p.id}" class="w-full bg-white border border-[#8c8f94] text-slate-700 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 cursor-pointer">
+                          <option value="published" ${p.status === 'published' ? 'selected' : ''}>Published</option>
+                          <option value="draft" ${p.status === 'draft' ? 'selected' : ''}>Draft</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tags</label>
+                        <input type="text" id="qe-tags-${p.id}" value="${(p.tags || []).join(', ')}" placeholder="ai, blogging" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 font-outfit" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td class="px-6 py-4.5">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-50 text-xs font-bold text-slate-650 border border-slate-200">
-                ${p.category || 'Uncategorized'}
-              </span>
-            </td>
-            <td class="px-6 py-4.5">
-              ${statusBadge}
-            </td>
-            <td class="px-6 py-4.5 text-sm text-slate-500 font-outfit">
-              <div class="flex items-center gap-1.5">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                ${p.wordCount || 0}
-              </div>
-            </td>
-            <td class="px-6 py-4.5 text-sm text-slate-400 whitespace-nowrap font-outfit">
-              ${dateFormatted}
-            </td>
-            <td class="px-6 py-4.5 text-right whitespace-nowrap">
-              <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <a href="/admin/posts/edit?id=${p.id}" class="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors" title="Edit Article">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
-                </a>
-                <button onclick="window.deletePost('${p.id}', '${p.title.replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-red-650 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Delete Article">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
+
+                <!-- Footer buttons -->
+                <div class="flex items-center justify-between border-t border-slate-200/80 pt-3">
+                  <div id="qe-error-${p.id}" class="text-red-650 font-bold text-[11px] hidden"></div>
+                  <div class="flex items-center gap-2 ml-auto">
+                    <button onclick="window.closeQuickEdit('${p.id}')" class="bg-white hover:bg-slate-50 border border-[#8c8f94] text-slate-700 font-bold px-3 py-1.5 rounded transition-all active:scale-[0.98] cursor-pointer">Cancel</button>
+                    <button id="qe-save-btn-${p.id}" onclick="window.saveQuickEdit('${p.id}')" class="bg-blue-600 hover:bg-blue-700 border border-blue-600 text-white font-bold px-4 py-1.5 rounded transition-all active:scale-[0.98] cursor-pointer">Update</button>
+                  </div>
+                </div>
               </div>
             </td>
           </tr>
@@ -200,61 +378,196 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       }).join('');
     }
 
-    function filterPosts() {
-      const search = (document.getElementById('search') as HTMLInputElement).value.toLowerCase();
-      const status = (document.getElementById('filter-status') as HTMLSelectElement).value;
-      const category = (document.getElementById('filter-category') as HTMLSelectElement).value;
-      
-      const filtered = allPosts.filter((p: any) => {
-        const matchesSearch = !search || 
-          p.title.toLowerCase().includes(search) || 
-          (p.slug && p.slug.toLowerCase().includes(search));
+    // Set up tab buttons click listeners
+    const tabMapping = {
+      'tab-all': 'all',
+      'tab-published': 'published',
+      'tab-scheduled': 'scheduled',
+      'tab-draft': 'draft'
+    };
+
+    Object.entries(tabMapping).forEach(([tabId, filterValue]) => {
+      document.getElementById(tabId)!.addEventListener('click', () => {
+        currentStatusFilter = filterValue;
+        setTabActive(tabId);
+        applyFiltersAndRender();
+      });
+    });
+
+    // Apply Filter button handler
+    document.getElementById('apply-filter')?.addEventListener('click', () => {
+      applyFiltersAndRender();
+    });
+
+    // Live search input handler
+    document.getElementById('search-input')?.addEventListener('input', () => {
+      applyFiltersAndRender();
+    });
+
+    // Header Select All Checkbox Handler
+    document.getElementById('select-all-posts')?.addEventListener('change', (e) => {
+      const checked = (e.target as HTMLInputElement).checked;
+      const checkboxes = document.querySelectorAll('input[name="post-select"]') as NodeListOf<HTMLInputElement>;
+      checkboxes.forEach(cb => cb.checked = checked);
+    });
+
+    // Bulk actions apply handler
+    document.getElementById('apply-bulk')?.addEventListener('click', async () => {
+      const action = (document.getElementById('bulk-action') as HTMLSelectElement).value;
+      if (!action) return;
+
+      const checkedBoxes = Array.from(document.querySelectorAll('input[name="post-select"]:checked')) as HTMLInputElement[];
+      if (!checkedBoxes.length) {
+        showGlobalAlert('No posts selected.', 'error');
+        return;
+      }
+
+      if (action === 'delete') {
+        if (!confirm(`Are you sure you want to delete ${checkedBoxes.length} selected post(s)?`)) return;
         
-        let matchesStatus = false;
-        if (!status) {
-          matchesStatus = true;
-        } else if (status === 'draft') {
-          matchesStatus = p.status === 'draft';
-        } else if (status === 'published') {
-          // If status filter is published, we check if it is already published and not scheduled
-          const now = new Date();
-          const pubDate = p.publishedAt ? new Date(p.publishedAt) : null;
-          matchesStatus = p.status === 'published' && (!pubDate || pubDate <= now);
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const cb of checkedBoxes) {
+          const id = cb.value;
+          try {
+            const res = await fetch(`/api/admin/posts?id=${id}`, { method: 'DELETE' });
+            if (res.ok) successCount++;
+            else failCount++;
+          } catch {
+            failCount++;
+          }
         }
 
-        const matchesCategory = !category || p.category === category;
-        return matchesSearch && matchesStatus && matchesCategory;
-      });
-      
-      renderTable(filtered);
+        showGlobalAlert(`Successfully trashed ${successCount} post(s). ${failCount > 0 ? `Failed to trash ${failCount} post(s).` : ''}`, 'success');
+        
+        // Reset check all
+        (document.getElementById('select-all-posts') as HTMLInputElement).checked = false;
+        
+        // Reload posts
+        loadPosts();
+      }
+    });
+
+    // Alert helper
+    function showGlobalAlert(msg: string, type: 'success' | 'error') {
+      const el = document.getElementById('posts-alert')!;
+      el.textContent = msg;
+      el.className = `mb-4 p-4 rounded text-xs font-semibold font-outfit border animate-in fade-in duration-200 ${type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 'bg-red-50 text-red-700 border-red-200'}`;
+      el.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    (window as any).deletePost = async function(id: string, title: string) {
+    // Add handlers to the global window object for in-table inline event listeners
+    (window as any).trashPost = async function(id: string) {
       if (isDeleting) return;
-      if (!confirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`)) return;
       
+      const row = document.getElementById(`row-${id}`);
+      const titleLink = row?.querySelector('a');
+      const title = titleLink ? titleLink.textContent : 'this post';
+
+      if (!confirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`)) return;
+
       isDeleting = true;
       try {
         const res = await fetch(`/api/admin/posts?id=${id}`, { method: 'DELETE' });
         if (res.ok) {
-          allPosts = allPosts.filter((p: any) => p.id !== id);
-          updateCount();
-          filterPosts(); 
+          showGlobalAlert(`Successfully moved "${title}" to Trash.`, 'success');
+          loadPosts();
         } else {
-          alert('Failed to delete article. Please try again.');
+          showGlobalAlert('Failed to delete post. Please try again.', 'error');
         }
-      } catch (error) {
-        console.error('Delete error:', error);
-        alert('An error occurred while deleting the article.');
+      } catch (err) {
+        console.error('Delete post error:', err);
+        showGlobalAlert('An error occurred while deleting the post.', 'error');
       } finally {
         isDeleting = false;
       }
     };
 
-    document.getElementById('search')?.addEventListener('input', filterPosts);
-    document.getElementById('filter-status')?.addEventListener('change', filterPosts);
-    document.getElementById('filter-category')?.addEventListener('change', filterPosts);
-    
-    loadPosts();
+    (window as any).openQuickEdit = function(id: string) {
+      // Hide standard row, show quick edit row
+      document.getElementById(`row-${id}`)!.classList.add('hidden');
+      
+      const qeRow = document.getElementById(`quick-edit-${id}`)!;
+      qeRow.classList.remove('hidden');
+      
+      // Auto focus title input
+      const titleInput = document.getElementById(`qe-title-${id}`) as HTMLInputElement;
+      titleInput?.focus();
+    };
+
+    (window as any).closeQuickEdit = function(id: string) {
+      // Hide quick edit row, show standard row
+      document.getElementById(`quick-edit-${id}`)!.classList.add('hidden');
+      document.getElementById(`row-${id}`)!.classList.remove('hidden');
+    };
+
+    (window as any).saveQuickEdit = async function(id: string) {
+      const title = (document.getElementById(`qe-title-${id}`) as HTMLInputElement).value.trim();
+      const slug = (document.getElementById(`qe-slug-${id}`) as HTMLInputElement).value.trim();
+      const dateVal = (document.getElementById(`qe-date-${id}`) as HTMLInputElement).value;
+      const category = (document.getElementById(`qe-category-${id}`) as HTMLSelectElement).value;
+      const status = (document.getElementById(`qe-status-${id}`) as HTMLSelectElement).value;
+      const author = (document.getElementById(`qe-author-${id}`) as HTMLInputElement).value.trim();
+      const tags = (document.getElementById(`qe-tags-${id}`) as HTMLInputElement).value.split(',').map(t => t.trim()).filter(Boolean);
+
+      const errEl = document.getElementById(`qe-error-${id}`)!;
+      const saveBtn = document.getElementById(`qe-save-btn-${id}`) as HTMLButtonElement;
+
+      if (!title) {
+        errEl.textContent = 'Title is required';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Updating...';
+      errEl.classList.add('hidden');
+
+      try {
+        // 1. Fetch full details from database first to prevent overwriting content or excerpt
+        const rDetails = await fetch(`/api/admin/posts?id=${id}`);
+        if (!rDetails.ok) throw new Error('Failed to retrieve full article content');
+        const details = await rDetails.json();
+
+        // 2. Merge changes
+        const payload = {
+          ...details, // keep all original fields (content, excerpt, custom CSS, FAQ items, isCustomHtml)
+          id,
+          title,
+          slug,
+          publishDate: dateVal ? new Date(dateVal).toISOString() : details.publishDate,
+          category,
+          status,
+          author,
+          tags
+        };
+
+        // 3. Send update
+        const rUpdate = await fetch('/api/admin/posts', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const updateData = await rUpdate.json();
+        if (!rUpdate.ok) throw new Error(updateData.error || 'Failed to update article');
+
+        // Close drawer and reload list
+        (window as any).closeQuickEdit(id);
+        showGlobalAlert(`Post "${title}" updated successfully.`, 'success');
+        loadPosts();
+      } catch (err: any) {
+        console.error('Quick edit save failed:', err);
+        errEl.textContent = err.message || 'Failed to save changes';
+        errEl.classList.remove('hidden');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Update';
+      }
+    };
+
+    // Load initial data
+    loadCategories().then(loadPosts);
   </script>
 </AdminLayout>

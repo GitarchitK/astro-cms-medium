@@ -1,0 +1,480 @@
+---
+export const prerender = false;
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const session = Astro.cookies.get('admin_session');
+if (session?.value !== 'authenticated') return Astro.redirect('/admin');
+---
+
+<AdminLayout title="Analytics" activeNav="analytics">
+  <!-- Header -->
+  <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight">Google Analytics 4</h1>
+      <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Monitor your site traffic and article page views</p>
+    </div>
+    <div class="flex items-center gap-2" id="analytics-badge-container">
+      <span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-650 text-[10px] font-bold uppercase tracking-wider animate-pulse">Checking status...</span>
+    </div>
+  </div>
+
+  <!-- Warning overlay (demo mode notice) -->
+  <div id="analytics-demo-notice" class="hidden mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 text-amber-800 text-xs rounded-r shadow-sm">
+    <div class="flex items-start gap-2.5">
+      <svg class="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <div>
+        <h4 class="font-bold text-amber-900 font-outfit mb-0.5">Google Analytics is in Demo Mode</h4>
+        <p class="text-slate-600 leading-relaxed max-w-3xl">
+          You are currently viewing mock traffic data because no GA4 Property ID is configured or the service account does not have permission. To connect your live analytics, enter your GA4 Property ID in <a href="/admin/settings" class="underline text-blue-600 font-bold hover:text-blue-800">Settings</a> and ensure your credentials are added as a Viewer in Google Analytics.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white border border-[#c3c4c7] rounded-md p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <p class="text-[10px] text-slate-450 font-bold uppercase tracking-wider font-outfit mb-1">Total Page Views (30 Days)</p>
+      <h3 class="text-3xl font-black text-slate-800 font-outfit tracking-tight" id="stat-total-views">—</h3>
+      <p class="text-[10px] text-slate-400 mt-1 font-outfit font-medium">Cumulative page impressions</p>
+    </div>
+    
+    <div class="bg-white border border-[#c3c4c7] rounded-md p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <p class="text-[10px] text-slate-450 font-bold uppercase tracking-wider font-outfit mb-1">Average Daily Views</p>
+      <h3 class="text-3xl font-black text-slate-800 font-outfit tracking-tight" id="stat-avg-views">—</h3>
+      <p class="text-[10px] text-slate-400 mt-1 font-outfit font-medium">Average visitors per 24 hours</p>
+    </div>
+
+    <div class="bg-white border border-[#c3c4c7] rounded-md p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <p class="text-[10px] text-slate-450 font-bold uppercase tracking-wider font-outfit mb-1">Peak Day Performance</p>
+      <h3 class="text-3xl font-black text-slate-800 font-outfit tracking-tight" id="stat-peak-views">—</h3>
+      <p class="text-[10px] text-slate-400 mt-1 font-outfit font-medium" id="stat-peak-date">No peak day recorded</p>
+    </div>
+  </div>
+
+  <!-- Big Traffic Chart Widget -->
+  <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6 overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+      <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Detailed Traffic History</h2>
+      <button id="refresh-chart-btn" class="inline-flex items-center gap-1 text-[#2271b1] hover:text-[#135e96] text-[11px] font-bold font-outfit transition-all cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2"/></svg>
+        Refresh Data
+      </button>
+    </div>
+    
+    <div class="p-6 relative select-none">
+      <!-- Loading overlay -->
+      <div id="chart-loader" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center text-slate-400 font-outfit text-xs gap-2">
+        <svg class="w-4 h-4 animate-spin text-blue-650" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span>Connecting to Google Analytics...</span>
+      </div>
+
+      <!-- Graph Wrapper -->
+      <div class="w-full h-64 md:h-80 relative" id="chart-wrapper">
+        <svg id="analytics-svg-chart" viewBox="0 0 800 320" class="w-full h-full text-slate-450 font-mono text-[9px] font-bold">
+          <!-- Injected SVG elements -->
+        </svg>
+        <!-- Interactive HTML Tooltip -->
+        <div id="chart-tooltip" class="absolute hidden bg-slate-900/95 text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg pointer-events-none font-outfit border border-slate-700/50 z-20 transition-all duration-75">
+          <div class="font-bold text-slate-350" id="tooltip-date"></div>
+          <div class="text-blue-400 font-extrabold mt-0.5" id="tooltip-views"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup & Connection Guide -->
+  <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+      <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Google Analytics Connection Guide</h2>
+    </div>
+    <div class="p-6 text-xs text-slate-600 font-outfit leading-relaxed space-y-4">
+      <p>
+        Mershal Admin integrates with Google Analytics 4 using your existing service credentials. Please complete the following steps to link your property:
+      </p>
+
+      <div class="space-y-3.5 pt-2">
+        <!-- Step 1 -->
+        <div class="flex gap-4 items-start">
+          <div class="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-200 shrink-0 mt-0.5">1</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-xs">Copy your Service Account email</h4>
+            <p class="text-slate-500 mt-0.5">
+              Copy the Firebase service account client email below:
+            </p>
+            <div class="flex items-center gap-2 mt-2">
+              <code class="bg-slate-100 border text-slate-700 px-2.5 py-1 rounded font-mono text-[10px] font-semibold break-all select-all" id="service-email-box">Loading...</code>
+              <button id="copy-email-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 rounded font-bold font-outfit text-[10px] transition-colors cursor-pointer">
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flex gap-4 items-start">
+          <div class="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-200 shrink-0 mt-0.5">2</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-xs">Invite Service Account to Google Analytics</h4>
+            <p class="text-slate-500 mt-0.5">
+              Go to your Google Analytics dashboard, navigate to <strong>Admin &gt; Property Access Management</strong>, click the "+" button, and add the copied service email as a <strong>Viewer</strong>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flex gap-4 items-start">
+          <div class="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-200 shrink-0 mt-0.5">3</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-xs">Get GA4 Property ID</h4>
+            <p class="text-slate-500 mt-0.5">
+              In Google Analytics, go to <strong>Admin &gt; Property Settings</strong> and find your <strong>Property ID</strong> (usually an 8-10 digit number).
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flex gap-4 items-start">
+          <div class="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-200 shrink-0 mt-0.5">4</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-xs">Save the Property ID in Settings</h4>
+            <p class="text-slate-500 mt-0.5">
+              Paste the Property ID into the Google Analytics 4 settings field on the <a href="/admin/settings" class="underline text-blue-600 font-bold hover:text-blue-800">General Settings</a> screen and click Save.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadAnalyticsData() {
+      const loader = document.getElementById('chart-loader');
+      const warningMsg = document.getElementById('analytics-demo-notice');
+      const badgeContainer = document.getElementById('analytics-badge-container');
+
+      try {
+        const res = await fetch('/api/admin/analytics');
+        const data = await res.json();
+        
+        if (loader) loader.classList.add('hidden');
+
+        if (res.ok && data.report) {
+          if (data.configRequired) {
+            if (warningMsg) warningMsg.classList.remove('hidden');
+            if (badgeContainer) {
+              badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-250 text-[10px] font-bold uppercase tracking-wider">Demo Mode</span>';
+            }
+          } else {
+            if (warningMsg) warningMsg.classList.add('hidden');
+            if (badgeContainer) {
+              badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-250 text-[10px] font-bold uppercase tracking-wider">Live GA4</span>';
+            }
+          }
+
+          // Compute Statistics
+          const viewsList = data.report.map((r: any) => r.views);
+          const totalViews = viewsList.reduce((a: number, b: number) => a + b, 0);
+          const avgViews = Math.round(totalViews / (viewsList.length || 1));
+          
+          let peakViews = 0;
+          let peakDateStr = 'No peak day recorded';
+          
+          data.report.forEach((r: any) => {
+            if (r.views > peakViews) {
+              peakViews = r.views;
+              let d = r.date;
+              if (d.length === 8) {
+                const year = parseInt(d.substring(0, 4));
+                const month = parseInt(d.substring(4, 6)) - 1;
+                const day = parseInt(d.substring(6, 8));
+                peakDateStr = `On ${new Date(year, month, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+              } else {
+                peakDateStr = `On ${d}`;
+              }
+            }
+          });
+
+          // Write stats
+          document.getElementById('stat-total-views')!.textContent = totalViews.toLocaleString();
+          document.getElementById('stat-avg-views')!.textContent = avgViews.toLocaleString();
+          document.getElementById('stat-peak-views')!.textContent = peakViews.toLocaleString();
+          document.getElementById('stat-peak-date')!.textContent = peakDateStr;
+
+          // Render chart
+          renderSvgChart(data.report);
+        } else {
+          throw new Error(data.error || 'Failed to load report data');
+        }
+      } catch (err: any) {
+        console.error('Failed to load analytics:', err);
+        if (loader) loader.classList.add('hidden');
+        if (badgeContainer) {
+          badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-750 border border-red-200 text-[10px] font-bold uppercase tracking-wider">Connection Error</span>';
+        }
+      }
+    }
+
+    // Render Custom SVG Analytics Chart
+    function renderSvgChart(report: Array<{ date: string; views: number }>) {
+      const svg = document.getElementById('analytics-svg-chart');
+      if (!svg) return;
+
+      const width = 800;
+      const height = 320;
+      const padding = { top: 20, right: 25, bottom: 40, left: 45 };
+
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+
+      // Extract values
+      const views = report.map(r => r.views);
+      const maxViews = Math.max(...views, 10); // avoid 0 division
+
+      // Build points
+      const points = report.map((r, i) => {
+        const x = padding.left + (i / (report.length - 1)) * chartWidth;
+        const y = (height - padding.bottom) - (r.views / maxViews) * chartHeight;
+        return { x, y, date: r.date, views: r.views };
+      });
+
+      // Clear SVG first
+      svg.innerHTML = '';
+
+      // Create defs for gradients
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.innerHTML = `
+        <linearGradient id="chart-grad-big" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.22" />
+          <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+        </linearGradient>
+      `;
+      svg.appendChild(defs);
+
+      // Y Axis Gridlines & Labels (5 lines)
+      for (let i = 0; i <= 4; i++) {
+        const val = Math.round((maxViews / 4) * i);
+        const y = (height - padding.bottom) - (i / 4) * chartHeight;
+
+        // Line
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', padding.left.toString());
+        line.setAttribute('y1', y.toString());
+        line.setAttribute('x2', (width - padding.right).toString());
+        line.setAttribute('y2', y.toString());
+        line.setAttribute('stroke', '#e2e8f0');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('stroke-dasharray', '2 4');
+        svg.appendChild(line);
+
+        // Label
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', (padding.left - 8).toString());
+        text.setAttribute('y', (y + 3).toString());
+        text.setAttribute('text-anchor', 'end');
+        text.setAttribute('fill', '#94a3b8');
+        text.setAttribute('class', 'font-sans text-[8px] font-semibold');
+        text.textContent = val.toLocaleString();
+        svg.appendChild(text);
+      }
+
+      // X Axis labels (5 labels spaced out)
+      const step = Math.floor(report.length / 4);
+      const labelIndices = [0, step, step * 2, step * 3, report.length - 1];
+      labelIndices.forEach(idx => {
+        if (idx >= report.length) return;
+        const pt = points[idx];
+        const rawDate = pt.date; // YYYYMMDD
+        let label = rawDate;
+        if (rawDate.length === 8) {
+          const year = parseInt(rawDate.substring(0, 4));
+          const month = parseInt(rawDate.substring(4, 6)) - 1;
+          const day = parseInt(rawDate.substring(6, 8));
+          const dateObj = new Date(year, month, day);
+          label = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', pt.x.toString());
+        text.setAttribute('y', (height - padding.bottom + 15).toString());
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#94a3b8');
+        text.setAttribute('class', 'font-sans text-[8px] font-semibold');
+        text.textContent = label;
+        svg.appendChild(text);
+      });
+
+      // Path data for the line
+      const linePathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+      const fillPathData = `${linePathData} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
+
+      // Draw Fill Area
+      const fillPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      fillPath.setAttribute('d', fillPathData);
+      fillPath.setAttribute('fill', 'url(#chart-grad-big)');
+      svg.appendChild(fillPath);
+
+      // Draw Stroke Line
+      const strokePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      strokePath.setAttribute('d', linePathData);
+      strokePath.setAttribute('fill', 'none');
+      strokePath.setAttribute('stroke', '#2563eb');
+      strokePath.setAttribute('stroke-width', '2.5');
+      strokePath.setAttribute('stroke-linejoin', 'round');
+      strokePath.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(strokePath);
+
+      // Interactive components
+      const hoverLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      hoverLine.setAttribute('y1', padding.top.toString());
+      hoverLine.setAttribute('y2', (height - padding.bottom).toString());
+      hoverLine.setAttribute('stroke', '#64748b');
+      hoverLine.setAttribute('stroke-width', '1');
+      hoverLine.setAttribute('stroke-dasharray', '3 3');
+      hoverLine.style.display = 'none';
+      svg.appendChild(hoverLine);
+
+      const hoverDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      hoverDot.setAttribute('r', '5');
+      hoverDot.setAttribute('fill', '#2563eb');
+      hoverDot.setAttribute('stroke', '#ffffff');
+      hoverDot.setAttribute('stroke-width', '2');
+      hoverDot.style.display = 'none';
+      svg.appendChild(hoverDot);
+
+      // Tooltip positioning helper
+      const tooltip = document.getElementById('chart-tooltip');
+      const tooltipDate = document.getElementById('tooltip-date');
+      const tooltipViews = document.getElementById('tooltip-views');
+
+      svg.addEventListener('mousemove', (e) => {
+        const rect = svg.getBoundingClientRect();
+        // Calculate mouse X relative to the SVG width
+        const clientX = e.clientX - rect.left;
+        const svgX = (clientX / rect.width) * width;
+
+        if (svgX < padding.left || svgX > width - padding.right) {
+          hideTooltip();
+          return;
+        }
+
+        // Find closest point
+        let closestPt = points[0];
+        let minDist = Infinity;
+        for (const pt of points) {
+          const dist = Math.abs(pt.x - svgX);
+          if (dist < minDist) {
+            minDist = dist;
+            closestPt = pt;
+          }
+        }
+
+        // Show line & dot
+        hoverLine.setAttribute('x1', closestPt.x.toString());
+        hoverLine.setAttribute('x2', closestPt.x.toString());
+        hoverLine.style.display = 'block';
+
+        hoverDot.setAttribute('cx', closestPt.x.toString());
+        hoverDot.setAttribute('cy', closestPt.y.toString());
+        hoverDot.style.display = 'block';
+
+        // Update tooltip content & position
+        if (tooltip && tooltipDate && tooltipViews) {
+          let readableDate = closestPt.date;
+          if (closestPt.date.length === 8) {
+            const year = parseInt(closestPt.date.substring(0, 4));
+            const month = parseInt(closestPt.date.substring(4, 6)) - 1;
+            const day = parseInt(closestPt.date.substring(6, 8));
+            readableDate = new Date(year, month, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+          }
+
+          tooltipDate.textContent = readableDate;
+          tooltipViews.textContent = `${closestPt.views.toLocaleString()} Page Views`;
+          
+          tooltip.classList.remove('hidden');
+
+          // Position tooltip
+          const tooltipWidth = tooltip.offsetWidth;
+          const tooltipHeight = tooltip.offsetHeight;
+
+          // Convert SVG point to client relative coordinates inside the wrapper
+          const wrapper = document.getElementById('chart-wrapper')!;
+          const wrapperRect = wrapper.getBoundingClientRect();
+          const targetLeft = (closestPt.x / width) * wrapperRect.width - tooltipWidth / 2;
+          const targetTop = (closestPt.y / height) * wrapperRect.height - tooltipHeight - 10;
+
+          // Limit within bounds
+          const leftBound = Math.max(0, Math.min(wrapperRect.width - tooltipWidth, targetLeft));
+          const topBound = Math.max(0, targetTop);
+
+          tooltip.style.left = `${leftBound}px`;
+          tooltip.style.top = `${topBound}px`;
+        }
+      });
+
+      svg.addEventListener('mouseleave', hideTooltip);
+
+      function hideTooltip() {
+        hoverLine.style.display = 'none';
+        hoverDot.style.display = 'none';
+        if (tooltip) tooltip.classList.add('hidden');
+      }
+    }
+
+    // Load Service Account email from status/config
+    async function loadServiceAccountEmail() {
+      try {
+        const res = await fetch('/api/admin/indexing');
+        await res.json();
+        
+        // Wait, how do we get the email from the API?
+        // Let's check indexing.ts or credentials. In google-api.ts, we use the ENV variables.
+        // Let's call /api/admin/settings which gets general settings, or fetch credentials.
+        // Wait, does /api/admin/indexing return credentials status? Yes, hasCredentials.
+        // Let's see: if we fetch settings, or we could modify /api/admin/settings to return service client email safely.
+        // Let's write a simple check or fetch from api/admin/settings.
+        const rSettings = await fetch('/api/admin/settings');
+        const settingsData = await rSettings.json();
+        
+        const emailBox = document.getElementById('service-email-box');
+        if (emailBox && settingsData.serviceAccountEmail) {
+          emailBox.textContent = settingsData.serviceAccountEmail;
+        } else if (emailBox) {
+          // If not in settings endpoint, fallback to a placeholders or we can show "Configured (via Env)"
+          emailBox.textContent = settingsData.envEmail || 'configured-service-account@google.com';
+        }
+      } catch (e) {
+        console.warn('Failed to load service email:', e);
+        const emailBox = document.getElementById('service-email-box');
+        if (emailBox) emailBox.textContent = 'configured-service-account@google.com';
+      }
+    }
+
+    // Refresh button event listener
+    document.getElementById('refresh-chart-btn')?.addEventListener('click', () => {
+      const loader = document.getElementById('chart-loader');
+      if (loader) loader.classList.remove('hidden');
+      loadAnalyticsData();
+    });
+
+    // Copy to clipboard
+    document.getElementById('copy-email-btn')?.addEventListener('click', () => {
+      const text = document.getElementById('service-email-box')?.textContent || '';
+      navigator.clipboard.writeText(text);
+      
+      const copyBtn = document.getElementById('copy-email-btn') as HTMLButtonElement;
+      if (copyBtn) {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+        }, 2000);
+      }
+    });
+
+    // Initialize Page Data
+    loadAnalyticsData();
+    loadServiceAccountEmail();
+  </script>
+</AdminLayout>

@@ -3,21 +3,20 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
-  activeNav?: 'dashboard' | 'posts' | 'new-post' | 'categories';
+  activeNav?: 'dashboard' | 'posts' | 'new-post' | 'categories' | 'media' | 'settings' | 'analytics' | 'indexing' | 'import-export';
 }
 
 const { title, activeNav } = Astro.props;
 
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard', href: '/admin/dashboard', icon: 'M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z' },
-  { id: 'posts', label: 'All Posts', href: '/admin/posts', icon: 'M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z' },
-  { id: 'new-post', label: 'New Post', href: '/admin/posts/new', icon: 'M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z' },
-  { id: 'categories', label: 'Categories', href: '/admin/categories', icon: 'M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z' },
-];
+// Determine if a submenu should be open by default
+const isPostsSection = ['posts', 'new-post', 'categories'].includes(activeNav || '');
+const isMediaSection = ['media'].includes(activeNav || '');
+const isToolsSection = ['indexing', 'import-export'].includes(activeNav || '');
+const isSettingsSection = ['settings'].includes(activeNav || '');
 ---
 
 <!DOCTYPE html>
-<html lang="en" class="selection:bg-indigo-500/10 selection:text-indigo-600">
+<html lang="en" class="selection:bg-blue-500/10 selection:text-blue-600">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -32,71 +31,214 @@ const navItems = [
     .font-outfit {
       font-family: 'Outfit', sans-serif;
     }
+    /* Scrollbar for WP Admin styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
   </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-800 min-h-screen flex antialiased overflow-x-hidden">
+<body class="bg-[#f0f0f1] text-[#1d2327] min-h-screen flex antialiased overflow-x-hidden">
 
-  <!-- Ambient Glow Backgrounds -->
-  <div class="fixed top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-500/3 blur-[120px] pointer-events-none z-0 animate-glow-pulse"></div>
-  <div class="fixed bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-violet-500/2 blur-[120px] pointer-events-none z-0 animate-glow-pulse [animation-delay:3s]"></div>
+  <!-- Mobile Header Bar -->
+  <header class="lg:hidden fixed top-0 left-0 right-0 h-12 bg-[#1d2327] text-white flex items-center justify-between px-4 z-40 shadow-md">
+    <div class="flex items-center gap-3">
+      <button id="mobile-toggle" class="text-slate-400 hover:text-white focus:outline-none cursor-pointer">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <span class="font-outfit font-black tracking-wider text-lg bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Mershal</span>
+    </div>
+    <div class="text-xs text-slate-400 font-medium">Editor</div>
+  </header>
 
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col fixed h-full z-20">
-    <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-      <div>
-        <a href="/" class="text-2xl font-black font-outfit tracking-wider bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Mershal</a>
-        <p class="text-[10px] font-bold font-outfit uppercase tracking-widest text-slate-400 mt-0.5">Control Center</p>
+  <!-- Sidebar (WordPress Admin styled) -->
+  <aside id="wp-sidebar" class="w-60 bg-[#1d2327] text-[#c3c4c7] flex flex-col fixed h-full z-30 transition-transform duration-200 -translate-x-full lg:translate-x-0 border-r border-[#2c3338] shadow-lg">
+    
+    <!-- Branding Header -->
+    <div class="h-16 border-b border-[#2c3338] flex items-center justify-between px-5 bg-[#1d2327] shrink-0">
+      <div class="flex items-center gap-2">
+        <!-- WP-like stylized 'M' logo -->
+        <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-outfit font-black text-lg shadow-[0_0_12px_rgba(37,99,235,0.4)] tracking-tighter">
+          W
+        </div>
+        <div>
+          <a href="/admin/dashboard" class="text-lg font-black font-outfit tracking-wide text-white hover:text-blue-400 transition-colors">Mershal</a>
+          <p class="text-[9px] font-bold font-outfit uppercase tracking-widest text-[#a7aaad] mt-0.5">Control Center</p>
+        </div>
       </div>
-      <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div>
+      <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
     </div>
 
-    <nav class="flex-1 p-4 space-y-1.5">
-      {navItems.map(item => {
-        const isActive = activeNav === item.id;
-        return (
-          <a
-            href={item.href}
-            class={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 relative group ${
-              isActive
-                ? 'bg-indigo-50/70 text-indigo-600 border-l-2 border-indigo-600 pl-3.5 font-semibold'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent hover:pl-3.5'
-            }`}
-          >
-            <svg class={`w-4 h-4 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`} fill="currentColor" viewBox="0 0 20 20">
-              <path d={item.icon} fill-rule="evenodd" clip-rule="evenodd" />
-            </svg>
-            <span class="font-outfit font-medium">{item.label}</span>
-            {isActive && (
-              <span class="absolute right-3 w-1.5 h-1.5 rounded-full bg-indigo-600 shadow-[0_0_6px_rgba(79,70,229,0.4)]"></span>
-            )}
-          </a>
-        );
-      })}
+    <!-- Main Navigation Menu -->
+    <nav class="flex-1 overflow-y-auto py-2 text-sm font-medium space-y-0.5">
+      
+      <!-- Dashboard Menu Item -->
+      <div>
+        <a href="/admin/dashboard" class={`flex items-center gap-3 px-4 py-2.5 hover:bg-[#2c3338] hover:text-blue-400 transition-all ${activeNav === 'dashboard' ? 'bg-[#2271b1] text-white font-semibold' : ''}`}>
+          <svg class="w-4 h-4 text-[#a7aaad]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span class="font-outfit">Dashboard</span>
+        </a>
+      </div>
+
+      <hr class="border-[#2c3338] my-1" />
+
+      <!-- Posts Collapsible Section -->
+      <div class="menu-group">
+        <button type="button" class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#2c3338] hover:text-blue-400 transition-all text-left group cursor-pointer focus:outline-none">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-[#a7aaad]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            <span class="font-outfit">Posts</span>
+          </div>
+          <svg class={`w-3.5 h-3.5 text-[#a7aaad] transition-transform duration-200 ${isPostsSection ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class={`bg-[#151a1e] py-1 text-xs pl-9 space-y-1 ${isPostsSection ? 'block' : 'hidden'}`}>
+          <a href="/admin/posts" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'posts' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>All Posts</a>
+          <a href="/admin/posts/new" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'new-post' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>Add New Post</a>
+          <a href="/admin/categories" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'categories' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>Categories</a>
+        </div>
+      </div>
+
+      <!-- Media Collapsible Section -->
+      <div class="menu-group">
+        <button type="button" class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#2c3338] hover:text-blue-400 transition-all text-left group cursor-pointer focus:outline-none">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-[#a7aaad]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span class="font-outfit">Media</span>
+          </div>
+          <svg class={`w-3.5 h-3.5 text-[#a7aaad] transition-transform duration-200 ${isMediaSection ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class={`bg-[#151a1e] py-1 text-xs pl-9 space-y-1 ${isMediaSection ? 'block' : 'hidden'}`}>
+          <a href="/admin/media" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'media' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>Library</a>
+          <a href="/admin/media?action=upload" class="block py-2 text-[#a7aaad] hover:text-blue-400 transition-colors">Add New Media</a>
+        </div>
+      </div>
+
+      <!-- Analytics Menu Item -->
+      <div>
+        <a href="/admin/analytics" class={`flex items-center gap-3 px-4 py-2.5 hover:bg-[#2c3338] hover:text-blue-400 transition-all ${activeNav === 'analytics' ? 'bg-[#2271b1] text-white font-semibold' : ''}`}>
+          <svg class="w-4 h-4 text-[#a7aaad]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>
+          <span class="font-outfit">Analytics</span>
+        </a>
+      </div>
+
+      <!-- Tools Collapsible Section -->
+      <div class="menu-group">
+        <button type="button" class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#2c3338] hover:text-blue-400 transition-all text-left group cursor-pointer focus:outline-none">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-[#a7aaad]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            <span class="font-outfit">Tools</span>
+          </div>
+          <svg class={`w-3.5 h-3.5 text-[#a7aaad] transition-transform duration-200 ${isToolsSection ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class={`bg-[#151a1e] py-1 text-xs pl-9 space-y-1 ${isToolsSection ? 'block' : 'hidden'}`}>
+          <a href="/admin/tools/indexing" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'indexing' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>Auto-Indexing</a>
+          <a href="/admin/tools/import-export" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'import-export' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>Import / Export</a>
+        </div>
+      </div>
+
+      <hr class="border-[#2c3338] my-1" />
+
+      <!-- Settings Collapsible Section -->
+      <div class="menu-group">
+        <button type="button" class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#2c3338] hover:text-blue-400 transition-all text-left group cursor-pointer focus:outline-none">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-[#a7aaad]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span class="font-outfit">Settings</span>
+          </div>
+          <svg class={`w-3.5 h-3.5 text-[#a7aaad] transition-transform duration-200 ${isSettingsSection ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class={`bg-[#151a1e] py-1 text-xs pl-9 space-y-1 ${isSettingsSection ? 'block' : 'hidden'}`}>
+          <a href="/admin/settings" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'settings' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>General Settings</a>
+        </div>
+      </div>
+
     </nav>
 
-    <div class="p-4 border-t border-slate-100 space-y-1 bg-slate-50/40">
-      <a href="/" target="_blank" class="flex items-center gap-2.5 px-3 py-2 text-slate-500 hover:text-slate-800 text-xs font-outfit font-medium transition-all group">
-        <svg class="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
-          <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
-        </svg>
-        View Website
-      </a>
-      <button id="logout-btn" class="flex items-center gap-2.5 px-3 py-2 text-slate-500 hover:text-red-600 text-xs font-outfit font-medium transition-all w-full text-left cursor-pointer group">
-        <svg class="w-4 h-4 text-slate-400 group-hover:text-red-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-        </svg>
-        Sign Out
-      </button>
+    <!-- Bottom User Profile & Sign Out -->
+    <div class="p-4 border-t border-[#2c3338] bg-[#1a2024] shrink-0 text-xs">
+      <div class="flex items-center gap-2.5 mb-3">
+        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-xs uppercase border border-[#2c3338]">
+          AD
+        </div>
+        <div>
+          <p class="font-bold text-white font-outfit">Administrator</p>
+          <p class="text-[10px] text-[#a7aaad] font-mono">editorial@mershal.in</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-between border-t border-[#2c3338]/50 pt-2.5">
+        <a href="/" target="_blank" class="flex items-center gap-1 text-[#a7aaad] hover:text-white transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span>Visit Site</span>
+        </a>
+        <button id="logout-btn" class="flex items-center gap-1 text-[#a7aaad] hover:text-red-400 transition-colors cursor-pointer focus:outline-none">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
   </aside>
 
-  <!-- Page Content -->
-  <main class="ml-64 flex-1 p-8 min-h-screen relative z-10 flex flex-col">
-    <slot />
+  <!-- Sidebar Overlay (mobile only) -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-25 hidden lg:hidden"></div>
+
+  <!-- Page Content Shell -->
+  <main class="flex-1 lg:ml-60 min-h-screen relative z-10 flex flex-col pt-12 lg:pt-0">
+    <div class="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+      <slot />
+    </div>
   </main>
 
   <script>
+    // Submenu toggling script
+    document.querySelectorAll('.menu-group').forEach(group => {
+      const btn = group.querySelector('button');
+      const submenu = btn?.nextElementSibling;
+      const arrow = btn?.querySelector('svg:last-child');
+
+      btn?.addEventListener('click', () => {
+        const isOpen = !submenu?.classList.contains('hidden');
+        if (isOpen) {
+          submenu?.classList.add('hidden');
+          submenu?.classList.remove('block');
+          arrow?.classList.remove('rotate-180');
+        } else {
+          submenu?.classList.remove('hidden');
+          submenu?.classList.add('block');
+          arrow?.classList.add('rotate-180');
+        }
+      });
+    });
+
+    // Mobile navigation toggle script
+    const sidebar = document.getElementById('wp-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const mobileToggle = document.getElementById('mobile-toggle');
+
+    function toggleMobileMenu() {
+      const isClosed = sidebar?.classList.contains('-translate-x-full');
+      if (isClosed) {
+        sidebar?.classList.remove('-translate-x-full');
+        overlay?.classList.remove('hidden');
+      } else {
+        sidebar?.classList.add('-translate-x-full');
+        overlay?.classList.add('hidden');
+      }
+    }
+
+    mobileToggle?.addEventListener('click', toggleMobileMenu);
+    overlay?.addEventListener('click', toggleMobileMenu);
+
+    // Logout script
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await fetch('/api/admin/auth', { method: 'DELETE' });
       window.location.href = '/admin';

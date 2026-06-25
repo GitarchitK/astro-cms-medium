@@ -2,6 +2,8 @@
 @import "tailwindcss/preflight" layer(base);
 @import "tailwindcss/utilities" layer(utilities);
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary-crimson: #8b0222;
   --color-primary-gold: #c29b38;

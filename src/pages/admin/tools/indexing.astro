@@ -1,0 +1,291 @@
+---
+export const prerender = false;
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+const session = Astro.cookies.get('admin_session');
+if (session?.value !== 'authenticated') return Astro.redirect('/admin');
+---
+
+<AdminLayout title="Auto-Indexing Diagnostics" activeNav="indexing">
+  <!-- Header -->
+  <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight">Google Auto-Indexing</h1>
+      <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Diagnose connection states and submit site URLs manually for instant indexing</p>
+    </div>
+    <div id="connection-badge-container">
+      <span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-650 text-[10px] font-bold uppercase tracking-wider animate-pulse">Checking credentials...</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Manual Submission Form -->
+    <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] lg:col-span-2">
+      <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+        <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Manual URL Submission</h2>
+      </div>
+      <form id="indexing-form" class="p-6 space-y-4">
+        <div id="indexing-alert" class="hidden p-3.5 rounded text-xs font-outfit font-semibold border"></div>
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-600 font-outfit uppercase tracking-wider mb-1.5">Action Type</label>
+          <div class="flex gap-4">
+            <label class="inline-flex items-center text-xs font-medium font-outfit text-slate-700 cursor-pointer">
+              <input type="radio" name="indexing-action" value="publish" checked class="mr-2 text-blue-600 focus:ring-blue-500" />
+              Publish / Update URL (URL_UPDATED)
+            </label>
+            <label class="inline-flex items-center text-xs font-medium font-outfit text-slate-700 cursor-pointer">
+              <input type="radio" name="indexing-action" value="delete" class="mr-2 text-red-650 focus:ring-red-500" />
+              Delete / Remove URL (URL_DELETED)
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label for="indexing-url" class="block text-xs font-bold text-slate-600 font-outfit uppercase tracking-wider mb-1.5">URL to Submit</label>
+          <input type="url" id="indexing-url" placeholder="https://mershal.in/ai-tools/example-slug" class="w-full bg-white border border-slate-300 text-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-blue-500 font-outfit placeholder-slate-400" required />
+          <p class="text-[10px] text-slate-400 mt-1 font-outfit">Must match the domain configured in site settings.</p>
+        </div>
+
+        <button type="submit" id="indexing-submit-btn" class="bg-[#2271b1] hover:bg-[#135e96] text-white px-4 py-2 rounded text-xs font-bold font-outfit transition-all active:scale-[0.98] cursor-pointer">
+          Submit to Google Indexing API
+        </button>
+      </form>
+    </div>
+
+    <!-- Search Console Guide -->
+    <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+        <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Search Console Setup</h2>
+      </div>
+      <div class="p-6 text-xs text-slate-600 font-outfit leading-relaxed space-y-4">
+        <p>
+          Google Indexing API notifications only succeed if the Service Account is invited to your property:
+        </p>
+        <div class="space-y-3 pt-1">
+          <div class="flex gap-3 items-start">
+            <div class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[10px] border border-blue-200 shrink-0 mt-0.5">1</div>
+            <div>
+              <p class="font-bold text-slate-700">Copy Service Account Email</p>
+              <div class="flex items-center gap-1.5 mt-1">
+                <code class="bg-slate-100 border text-slate-700 px-2 py-0.5 rounded font-mono text-[9px] font-semibold break-all select-all" id="service-email-box">Loading...</code>
+                <button id="copy-email-btn" class="text-blue-600 hover:underline font-bold text-[10px] shrink-0 cursor-pointer">Copy</button>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-3 items-start">
+            <div class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[10px] border border-blue-200 shrink-0 mt-0.5">2</div>
+            <div>
+              <p class="font-bold text-slate-700">Add to Search Console</p>
+              <p class="text-[10px] text-slate-450 mt-0.5">Go to your Google Search Console Settings &gt; Users and Permissions, add this email address, and select <strong>Owner</strong> or <strong>Full</strong> permission.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Submissions Log Table -->
+  <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+      <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Submission Transaction History (Last 50 Logs)</h2>
+      <button id="refresh-logs-btn" class="text-blue-600 hover:text-blue-800 text-[10px] font-bold font-outfit flex items-center gap-1 cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2"/></svg>
+        Refresh Logs
+      </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="bg-slate-50/75 border-b border-slate-200 text-[10px] font-bold text-slate-450 uppercase tracking-wider select-none font-outfit">
+            <th class="p-3 pl-4">Timestamp</th>
+            <th class="p-3">Target URL</th>
+            <th class="p-3">Action</th>
+            <th class="p-3">Status</th>
+            <th class="p-3 pr-4">API Response / Details</th>
+          </tr>
+        </thead>
+        <tbody id="logs-tbody" class="divide-y divide-slate-100 font-outfit">
+          <tr>
+            <td colspan="5" class="p-8 text-center text-slate-400 font-outfit">
+              <svg class="w-5 h-5 animate-spin mx-auto text-blue-650 mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span>Fetching transaction logs...</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Fetch logs and credential configuration status
+    async function loadIndexingDashboard() {
+      const tbody = document.getElementById('logs-tbody')!;
+      const badgeContainer = document.getElementById('connection-badge-container')!;
+      
+      try {
+        const res = await fetch('/api/admin/indexing');
+        const data = await res.json();
+        
+        if (res.ok) {
+          // Update Badge
+          if (data.hasCredentials) {
+            badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-250 text-[10px] font-bold uppercase tracking-wider">Credentials Connected</span>';
+          } else {
+            badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-750 border border-red-200 text-[10px] font-bold uppercase tracking-wider">Missing Credentials</span>';
+          }
+
+          // Populate Logs
+          if (!data.logs || data.logs.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" class="p-8 text-center text-slate-450 font-outfit">No indexing logs found. Submissions occur automatically when posts are published/deleted.</td>
+              </tr>
+            `;
+            return;
+          }
+
+          tbody.innerHTML = data.logs.map((log: any) => {
+            const dateStr = new Date(log.timestamp).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+
+            const actionBadge = log.action === 'delete'
+              ? '<span class="px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 text-[9px] font-bold uppercase tracking-wider">Delete</span>'
+              : '<span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold uppercase tracking-wider">Publish</span>';
+
+            const statusBadge = log.status === 'success'
+              ? '<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-250 text-[9px] font-bold uppercase tracking-wider">Success</span>'
+              : '<span class="px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 text-[9px] font-bold uppercase tracking-wider">Failed</span>';
+
+            return `
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-3 pl-4 text-slate-500 font-mono text-[10px] whitespace-nowrap">${dateStr}</td>
+                <td class="p-3 font-semibold text-slate-700 break-all max-w-xs sm:max-w-md">${log.url}</td>
+                <td class="p-3">${actionBadge}</td>
+                <td class="p-3">${statusBadge}</td>
+                <td class="p-3 pr-4 font-mono text-[10px] text-slate-500 max-w-xs truncate" title="${escapeHtml(log.response)}">${escapeHtml(log.response)}</td>
+              </tr>
+            `;
+          }).join('');
+        } else {
+          throw new Error(data.error || 'Failed to retrieve logs');
+        }
+      } catch (err: any) {
+        console.error('Failed to load indexing page info:', err);
+        badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-705 border border-red-200 text-[10px] font-bold uppercase tracking-wider">Failed to check</span>';
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-8 text-center text-red-600 font-semibold font-outfit">Failed to load submissions logs: ${err.message || 'connection error'}</td>
+          </tr>
+        `;
+      }
+    }
+
+    // Load Service Account email for helper guidelines
+    async function loadServiceAccountEmail() {
+      try {
+        const res = await fetch('/api/admin/settings');
+        const settingsData = await res.json();
+        const emailBox = document.getElementById('service-email-box');
+        
+        if (emailBox && settingsData.envEmail) {
+          emailBox.textContent = settingsData.envEmail;
+        } else if (emailBox) {
+          emailBox.textContent = 'configured-service-account@google.com';
+        }
+      } catch (e) {
+        console.warn('Failed to load service email:', e);
+        const emailBox = document.getElementById('service-email-box');
+        if (emailBox) emailBox.textContent = 'configured-service-account@google.com';
+      }
+    }
+
+    // Helper to escape HTML tags
+    function escapeHtml(text: string): string {
+      if (!text) return '';
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Submit handler
+    const indexingForm = document.getElementById('indexing-form') as HTMLFormElement;
+    indexingForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const alertEl = document.getElementById('indexing-alert')!;
+      const submitBtn = document.getElementById('indexing-submit-btn') as HTMLButtonElement;
+      
+      const url = (document.getElementById('indexing-url') as HTMLInputElement).value.trim();
+      const action = (document.querySelector('input[name="indexing-action"]:checked') as HTMLInputElement).value;
+
+      if (!url) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting request...';
+      alertEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/admin/indexing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, action })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alertEl.textContent = 'URL submitted successfully to Google Search Console!';
+          alertEl.className = 'p-3.5 rounded text-xs font-outfit font-semibold border bg-emerald-50 text-emerald-700 border-emerald-250';
+          alertEl.classList.remove('hidden');
+          
+          // Clear input and reload logs
+          (document.getElementById('indexing-url') as HTMLInputElement).value = '';
+          loadIndexingDashboard();
+        } else {
+          throw new Error(data.error || 'Failed to submit URL');
+        }
+      } catch (err: any) {
+        console.error('Manual URL indexing failed:', err);
+        alertEl.innerHTML = `<strong>Submission failed</strong>: ${err.message || 'unspecified API error'}`;
+        alertEl.className = 'p-3.5 rounded text-xs font-outfit font-semibold border bg-red-50 text-red-700 border-red-200';
+        alertEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit to Google Indexing API';
+      }
+    });
+
+    // Copy to clipboard
+    document.getElementById('copy-email-btn')?.addEventListener('click', () => {
+      const text = document.getElementById('service-email-box')?.textContent || '';
+      navigator.clipboard.writeText(text);
+      
+      const copyBtn = document.getElementById('copy-email-btn') as HTMLButtonElement;
+      if (copyBtn) {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+        }, 2000);
+      }
+    });
+
+    // Refresh logs button
+    document.getElementById('refresh-logs-btn')?.addEventListener('click', () => {
+      loadIndexingDashboard();
+    });
+
+    // Initialize Page
+    loadIndexingDashboard();
+    loadServiceAccountEmail();
+  </script>
+</AdminLayout>

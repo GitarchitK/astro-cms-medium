@@ -13,6 +13,8 @@ const { category, slug } = Astro.params;
 
 let article: any = null;
 let relatedArticles: any[] = [];
+let recentArticles: any[] = [];
+let interlinkMappings: { term: string; url: string }[] = [];
 
 // Session check to allow drafts/scheduled previews for Admin
 const session = Astro.cookies.get('admin_session');
@@ -66,7 +68,8 @@ if (adminDb && slug) {
           tags: d.tags || [],
           status: d.status || 'published',
           faq_items: d.faq_items || [],
-          isCustomHtml: !!d.isCustomHtml || d.content?.toLowerCase().includes('<html') || d.content?.toLowerCase().includes('<!doctype')
+          isCustomHtml: !!d.isCustomHtml || d.content?.toLowerCase().includes('<html') || d.content?.toLowerCase().includes('<!doctype'),
+          customCss: d.customCss || ''
         };
 
         // Redirect to the correct category slug if it doesn't match the URL parameter
@@ -74,29 +77,98 @@ if (adminDb && slug) {
           return Astro.redirect(`/${article.categorySlug}/${article.slug}`, 301);
         }
 
-        // Fetch related articles from same category (exclude current)
-        const relatedSnapshot = await adminDb.collection('articles')
-          .where('category', '==', article.category)
+        // Fetch published articles for dynamic interlinking and personalized recommendations
+        const interlinkSnapshot = await adminDb.collection('articles')
           .where('status', '==', 'published')
-          .limit(4)
+          .limit(200)
           .get();
 
-        relatedArticles = relatedSnapshot.docs
+        const articlesForInterlinking = interlinkSnapshot.docs
           .map(rdoc => {
             const rd = rdoc.data();
+            let pDate = null;
+            if (rd.publish_date) {
+              pDate = typeof rd.publish_date.toDate === 'function' ? rd.publish_date.toDate() : new Date(rd.publish_date);
+            }
             return {
               id: rdoc.id,
               slug: rd.slug || rdoc.id,
               title: rd.title || '',
               category: rd.category || 'AI Tools',
               categorySlug: (rd.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-              featuredImage: rd.featured_image || '',
+              tags: rd.tags || [],
+              featuredImage: rd.featured_image || rd.featuredImage || '',
               readingTime: rd.readingTime || 5,
-              publishDate: rd.publish_date?.toDate?.() || null
+              publishDate: pDate
             };
           })
-          .filter(art => art.id !== article.id && art.publishDate && art.publishDate <= now)
+          .filter(art => art.id !== article.id && art.publishDate && art.publishDate <= now);
+
+        // Compute recommendations based on category matches and shared tags
+        const scoredArticles = articlesForInterlinking.map(art => {
+          let score = 0;
+          if (art.category === article.category) {
+            score += 5;
+          }
+          if (art.tags && article.tags) {
+            const sharedTags = art.tags.filter((t: string) => article.tags.includes(t));
+            score += sharedTags.length * 3;
+          }
+          if (art.publishDate) {
+            score += (art.publishDate.getTime() / 10000000000) * 0.1; // Recency boost
+          }
+          return { ...art, score };
+        });
+
+        relatedArticles = scoredArticles
+          .sort((a, b) => b.score - a.score)
           .slice(0, 3);
+
+        recentArticles = articlesForInterlinking
+          .filter(art => art.id !== article.id)
+          .sort((a, b) => {
+            const dateA = a.publishDate ? a.publishDate.getTime() : 0;
+            const dateB = b.publishDate ? b.publishDate.getTime() : 0;
+            return dateB - dateA;
+          })
+          .slice(0, 4);
+
+        // Build dynamic interlink mappings
+        const categoryMappings = [
+          { term: 'AI Tools', url: '/category/ai-tools' },
+          { term: 'Technology Guides', url: '/category/technology-guides' },
+          { term: 'Software Reviews', url: '/category/software-reviews' },
+          { term: 'SEO & Blogging', url: '/category/seo-blogging' },
+          { term: 'Web Development', url: '/category/web-development' },
+          { term: 'Productivity', url: '/category/productivity' },
+          { term: 'Freelancing', url: '/category/freelancing' },
+          { term: 'Side Hustles', url: '/category/side-hustles' },
+          { term: 'Remote Work', url: '/category/remote-work' },
+          { term: 'Startup Stories', url: '/category/startup-stories' }
+        ];
+
+        const postMappings: { term: string; url: string }[] = [];
+        for (const art of articlesForInterlinking) {
+          const url = `/${art.categorySlug}/${art.slug}`;
+          postMappings.push({ term: art.title, url });
+
+          // Extract secondary shorter terms from titles with separators (e.g. "V0 by Vercel: The Future of Web Development" -> "V0 by Vercel")
+          const separators = [':', '|', '-'];
+          for (const sep of separators) {
+            if (art.title.includes(sep)) {
+              const parts = art.title.split(sep);
+              const firstPart = parts[0].trim();
+              if (firstPart.length >= 5 && firstPart.split(/\s+/).length >= 2) {
+                postMappings.push({ term: firstPart, url });
+              }
+            }
+          }
+        }
+
+        // Combine mappings and sort by term length descending (so longer phrases are matched first)
+        interlinkMappings = [...categoryMappings, ...postMappings]
+          .filter((mapping, idx, self) => self.findIndex(m => m.term.toLowerCase() === mapping.term.toLowerCase()) === idx) // Deduplicate
+          .sort((a, b) => b.term.length - a.term.length);
       }
     }
   } catch (e) {
@@ -106,54 +178,69 @@ if (adminDb && slug) {
 
 if (!article) return Astro.redirect('/404');
 
+function replaceInTextNodes(html: string, term: string, url: string) {
+  const parts = html.split(/(<[^>]+>)/g);
+  let replaced = false;
+  
+  const termEscaped = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const termRegex = new RegExp(`\\b(${termEscaped})\\b`, 'i');
+
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i].startsWith('<')) {
+      continue;
+    }
+    
+    if (termRegex.test(parts[i])) {
+      parts[i] = parts[i].replace(termRegex, `<a href="${url}" class="text-indigo-650 dark:text-indigo-405 font-bold hover:underline">$1</a>`);
+      replaced = true;
+      break;
+    }
+  }
+  
+  return { html: parts.join(''), replaced };
+}
+
 // Automatic contextual internal links to build topics clusters
-function injectContextualLinks(contentHtml: string, currentSlug: string) {
-  const linkMappings = [
-    { term: 'AI Tools', url: '/category/ai-tools' },
-    { term: 'Technology Guides', url: '/category/technology-guides' },
-    { term: 'Software Reviews', url: '/category/software-reviews' },
-    { term: 'SEO & Blogging', url: '/category/seo-blogging' },
-    { term: 'Web Development', url: '/category/web-development' },
-    { term: 'Productivity', url: '/category/productivity' },
-    { term: 'Freelancing', url: '/category/freelancing' },
-    { term: 'Side Hustles', url: '/category/side-hustles' },
-    { term: 'Remote Work', url: '/category/remote-work' },
-    { term: 'Startup Stories', url: '/category/startup-stories' }
-  ];
-
+function injectContextualLinks(contentHtml: string, currentSlug: string, mappings: { term: string; url: string }[]) {
   let modifiedHtml = contentHtml;
-
-  for (const mapping of linkMappings) {
-    if (mapping.url.includes(currentSlug)) continue;
-
-    // Matches paragraphs to inject links securely inside content blocks
-    const paragraphRegex = /<p>([\s\S]*?)<\/p>/gi;
+  const linkedUrls = new Set<string>();
+  
+  for (const mapping of mappings) {
+    if (mapping.url.includes(currentSlug) || linkedUrls.has(mapping.url)) continue;
+    
+    const termEscaped = mapping.term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const termRegex = new RegExp(`\\b(${termEscaped})\\b`, 'i');
+    
+    if (!termRegex.test(modifiedHtml)) continue;
+    
+    const paragraphOrLiRegex = /(<(p|li)>)([\s\S]*?)(<\/\2>)/gi;
     let match;
-    let replaced = false;
-
-    paragraphRegex.lastIndex = 0;
-
-    while ((match = paragraphRegex.exec(contentHtml)) !== null && !replaced) {
-      const paragraphContent = match[1];
+    const tempHtml = modifiedHtml;
+    
+    while ((match = paragraphOrLiRegex.exec(tempHtml)) !== null) {
+      const fullTag = match[0];
+      const startTag = match[1];
+      const innerContent = match[3];
+      const endTag = match[4];
       
-      // Do not inject if a link is already present inside paragraph or term isn't there
-      if (paragraphContent.toLowerCase().includes('href=') || !paragraphContent.toLowerCase().includes(mapping.term.toLowerCase())) {
+      if (innerContent.toLowerCase().includes('href=') || innerContent.toLowerCase().includes('<a ')) {
         continue;
       }
-
-      const termRegex = new RegExp(`\\b(${mapping.term})\\b`, 'i');
-      if (termRegex.test(paragraphContent)) {
-        const newParagraph = paragraphContent.replace(termRegex, `<a href="${mapping.url}" class="text-indigo-650 dark:text-indigo-405 font-bold hover:underline">$1</a>`);
-        modifiedHtml = modifiedHtml.replace(match[0], `<p>${newParagraph}</p>`);
-        replaced = true;
+      
+      const { html: newInnerContent, replaced } = replaceInTextNodes(innerContent, mapping.term, mapping.url);
+      if (replaced) {
+        const newTag = `${startTag}${newInnerContent}${endTag}`;
+        modifiedHtml = modifiedHtml.replace(fullTag, newTag);
+        linkedUrls.add(mapping.url);
+        break; // Only replace one occurrence of this term in the entire article
       }
     }
   }
-
+  
   return modifiedHtml;
 }
 
-const adInjectedContent = injectContextualLinks(article.content, article.slug);
+const adInjectedContent = injectContextualLinks(article.content, article.slug, interlinkMappings);
 const shortDate = article.publishDate ? article.publishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 const shortModifiedDate = article.modifiedDate ? article.modifiedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 const isUpdated = article.modifiedDate && article.publishDate && article.modifiedDate.getTime() > article.publishDate.getTime() + 86400000;
@@ -190,6 +277,7 @@ const uniqueFaqs = finalFaqs.filter(faq => {
   <!-- SEO JSON-LD Consolidate Schema -->
   <Fragment slot="head">
     <link rel="preload" as="image" href={article.featuredImage} fetchpriority="high" />
+    {article.customCss && <style is:inline set:html={article.customCss}></style>}
     <script is:inline type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@graph": [
@@ -334,15 +422,24 @@ const uniqueFaqs = finalFaqs.filter(faq => {
                   <template id="custom-html-template" set:html={adInjectedContent}></template>
                   <div id="shadow-host"></div>
                 </div>
-                <script is:inline>
+                <script is:inline set:html={`
                   (function() {
                     const host = document.getElementById('shadow-host');
                     const template = document.getElementById('custom-html-template');
                     if (host && template) {
                       const shadow = host.attachShadow({ mode: 'open' });
                       shadow.appendChild(template.content.cloneNode(true));
+                      
+                      // Inject custom CSS into shadow DOM
+                      const css = ${JSON.stringify(article.customCss)};
+                      if (css) {
+                        const style = document.createElement('style');
+                        style.textContent = css;
+                        shadow.appendChild(style);
+                      }
                     }
                   })();
+                `}>
                 </script>
               </>
             ) : (
@@ -457,23 +554,59 @@ const uniqueFaqs = finalFaqs.filter(faq => {
                   </div>
                 )}
 
-                <!-- Related Articles Slider -->
+                <!-- Continue Reading Panel -->
                 {relatedArticles.length > 0 && (
-                  <section class="mt-14 pt-8 border-t border-slate-200 dark:border-slate-800">
-                    <h3 class="text-lg font-black font-serif text-slate-900 dark:text-white uppercase tracking-wide mb-6">Related Guides & Reviews</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      {relatedArticles.map((rel: any) => (
-                        <a href={`/${rel.categorySlug}/${rel.slug}`} class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-850/80 overflow-hidden shadow-sm hover:border-indigo-500/30 transition-all duration-200">
-                          <div class="aspect-[16/9] w-full overflow-hidden border-b border-slate-100 dark:border-slate-800">
-                            <Image src={rel.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} alt={rel.title} width={360} height={200} class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102" />
-                          </div>
-                          <div class="p-4 flex flex-col flex-1 justify-between gap-3">
-                            <div>
-                              <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1.5">{rel.category}</span>
-                              <h4 class="text-[14px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 leading-[1.4] group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors">{rel.title}</h4>
+                  <section class="mt-16 pt-10 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-3 mb-8">
+                      <div class="h-8 w-1 rounded-full bg-gradient-to-b from-indigo-600 to-violet-500"></div>
+                      <div>
+                        <span class="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-mono">Curated For You</span>
+                        <h3 class="text-xl md:text-2xl font-black font-serif text-slate-900 dark:text-white leading-tight">Continue Your Journey</h3>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {relatedArticles.map((rel: any, index: number) => (
+                        <a 
+                          href={`/${rel.categorySlug}/${rel.slug}`} 
+                          class="group relative flex flex-col bg-slate-50/40 hover:bg-white dark:bg-slate-900/40 dark:hover:bg-slate-850 rounded-2xl border border-slate-200/50 hover:border-transparent dark:border-slate-800/80 dark:hover:border-transparent overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-indigo-500/2 flex-1"
+                        >
+                          {index === 0 && (
+                            <div class="absolute inset-0 p-[1px] rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10">
+                              <div class="w-full h-full bg-white dark:bg-slate-850 rounded-[15px]"></div>
                             </div>
-                            <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold font-mono">
+                          )}
+
+                          <div class="aspect-[16/10] w-full overflow-hidden relative">
+                            <Image 
+                              src={rel.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} 
+                              alt={rel.title} 
+                              width={400} 
+                              height={250} 
+                              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                            />
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            
+                            <span class="absolute top-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-slate-800 dark:text-slate-200 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg shadow-sm">
+                              {rel.category}
+                            </span>
+                          </div>
+
+                          <div class="p-5 flex flex-col flex-1 justify-between gap-4">
+                            <div>
+                              <h4 class="text-base font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug group-hover:text-indigo-650 dark:group-hover:text-indigo-405 transition-colors duration-250">
+                                {rel.title}
+                              </h4>
+                            </div>
+
+                            <div class="flex items-center justify-between text-[11px] font-bold text-slate-450 dark:text-slate-500 font-mono">
                               <span>{rel.readingTime} min read</span>
+                              <span class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform duration-250">
+                                Read Article
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                              </span>
                             </div>
                           </div>
                         </a>
@@ -487,14 +620,49 @@ const uniqueFaqs = finalFaqs.filter(faq => {
           </article>
         </div>
 
-        <!-- Right: Sticky Sidebar TOC -->
+        <!-- Right: Sidebar TOC & Widgets -->
         {!article.isCustomHtml && (
           <aside class="hidden lg:block w-[300px]">
-            <div class="sticky top-24 space-y-8">
+            <div class="space-y-6">
+              <!-- TOC -->
               <div id="toc-box" class="bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/80 shadow-sm hidden">
                 <h3 class="text-xs uppercase tracking-widest font-black text-slate-900 dark:text-white mb-4 font-sans">Table of Contents</h3>
-                <nav id="toc-nav" class="relative pl-3 space-y-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-slate-800"></nav>
+                <nav id="toc-nav" class="relative pl-3 space-y-3 text-xs font-bold text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-slate-800"></nav>
               </div>
+
+              <!-- Sidebar Newsletter Widget -->
+              <div class="bg-slate-950 text-white rounded-2xl p-5 border border-slate-800 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
+                <h3 class="text-sm font-black font-serif mb-1">Mershal Insider</h3>
+                <p class="text-[10px] text-slate-450 leading-relaxed mb-4">Join our expert builder circle. Get deep-dive blueprints, tech reviews, and AI strategies delivered weekly.</p>
+                <form id="sidebar-newsletter-form" class="space-y-2">
+                  <div id="sidebar-newsletter-status" class="hidden text-[10px] font-bold"></div>
+                  <input type="email" id="sidebar-newsletter-email" placeholder="Your email address" class="w-full bg-white/10 border border-white/10 hover:border-white/20 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-400 font-sans placeholder-white/40" required />
+                  <button type="submit" id="sidebar-newsletter-submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-black transition-all active:scale-[0.98] cursor-pointer">Subscribe Free</button>
+                </form>
+              </div>
+
+              <!-- Recent Articles Widget -->
+              {recentArticles.length > 0 && (
+                <div class="bg-white dark:bg-slate-900/40 rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/80 shadow-sm">
+                  <h3 class="text-xs uppercase tracking-widest font-black text-slate-900 dark:text-white mb-4 font-sans">Trending Reading</h3>
+                  <div class="space-y-4">
+                    {recentArticles.map((recent: any) => (
+                      <a href={`/${recent.categorySlug}/${recent.slug}`} class="group flex gap-3.5 items-center">
+                        <div class="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-850 border border-slate-200/40 dark:border-slate-800/80">
+                          <img src={recent.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100'} alt={recent.title} class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        </div>
+                        <div class="min-w-0">
+                          <h4 class="text-xs font-bold text-slate-800 dark:text-slate-250 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {recent.title}
+                          </h4>
+                          <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 font-mono mt-0.5 block">{recent.readingTime} min read</span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
         )}
@@ -607,6 +775,46 @@ const uniqueFaqs = finalFaqs.filter(faq => {
       bar.style.width = progress + '%';
     });
   }
+
+  // Sidebar Newsletter subscription logic
+  const sidebarForm = document.getElementById('sidebar-newsletter-form') as HTMLFormElement;
+  const sidebarEmailInput = document.getElementById('sidebar-newsletter-email') as HTMLInputElement;
+  const sidebarSubmitBtn = document.getElementById('sidebar-newsletter-submit') as HTMLButtonElement;
+  const sidebarStatusEl = document.getElementById('sidebar-newsletter-status') as HTMLDivElement;
+
+  sidebarForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = sidebarEmailInput.value.trim();
+    if (!email) return;
+
+    sidebarSubmitBtn.disabled = true;
+    sidebarSubmitBtn.textContent = 'Subscribing...';
+    sidebarStatusEl.classList.add('hidden');
+
+    try {
+      const { db } = await import('../../lib/firebase');
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+
+      await addDoc(collection(db, 'newsletter_subscribers'), {
+        email: email,
+        subscribed_at: serverTimestamp(),
+        status: 'active'
+      });
+
+      sidebarStatusEl.textContent = '✓ Subscribed successfully!';
+      sidebarStatusEl.className = 'mt-1 text-[10px] font-bold text-emerald-400';
+      sidebarStatusEl.classList.remove('hidden');
+      sidebarForm.reset();
+    } catch (error: any) {
+      console.error('Sidebar newsletter subscription error:', error);
+      sidebarStatusEl.textContent = '✗ Subscription failed.';
+      sidebarStatusEl.className = 'mt-1 text-[10px] font-bold text-red-400';
+      sidebarStatusEl.classList.remove('hidden');
+    } finally {
+      sidebarSubmitBtn.disabled = false;
+      sidebarSubmitBtn.textContent = 'Subscribe Free';
+    }
+  });
 </script>
 
 <style is:global>

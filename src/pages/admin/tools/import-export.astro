@@ -1,0 +1,173 @@
+---
+export const prerender = false;
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+const session = Astro.cookies.get('admin_session');
+if (session?.value !== 'authenticated') return Astro.redirect('/admin');
+---
+
+<AdminLayout title="Import / Export Tools" activeNav="import-export">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight">Import / Export Tools</h1>
+    <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Backup your database content or import bulk articles from a JSON archive</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Export Box -->
+    <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between">
+      <div>
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+          <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Export Articles Database</h2>
+        </div>
+        <div class="p-6 text-xs text-slate-600 font-outfit leading-relaxed space-y-4">
+          <p>
+            When you click the export button below, Mershal will generate a full JSON data dump of your articles collection, including SEO metadata, FAQ schema structures, categories, and word counts.
+          </p>
+          <div class="p-3 bg-blue-50/50 border border-blue-100 text-blue-800 text-[11px] rounded leading-relaxed">
+            <strong>Use cases:</strong> Creating offline backups, migrating between Firestore databases, or bulk editing content with search-and-replace scripts.
+          </div>
+        </div>
+      </div>
+      <div class="p-6 border-t border-slate-50 bg-slate-50/50">
+        <a href="/api/admin/backup" download class="inline-flex items-center gap-1.5 bg-[#2271b1] hover:bg-[#135e96] text-white px-4 py-2 rounded text-xs font-bold font-outfit transition-all active:scale-[0.98]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download Database Export (.json)
+        </a>
+      </div>
+    </div>
+
+    <!-- Import Box -->
+    <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between">
+      <div>
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+          <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Import Articles Backup</h2>
+        </div>
+        
+        <form id="import-form" class="p-6 space-y-4">
+          <div id="import-alert" class="hidden p-3.5 rounded text-xs font-outfit font-semibold border"></div>
+
+          <div>
+            <label for="import-file" class="block text-xs font-bold text-slate-600 font-outfit uppercase tracking-wider mb-1.5">Select Backup JSON File</label>
+            <input type="file" id="import-file" accept=".json" class="w-full bg-white border border-slate-300 text-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-blue-500 font-outfit placeholder-slate-400 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer" required />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 font-outfit uppercase tracking-wider mb-1.5">Import Strategy</label>
+            <div class="space-y-2">
+              <label class="flex items-start text-xs font-medium font-outfit text-slate-700 cursor-pointer">
+                <input type="radio" name="import-mode" value="merge" checked class="mr-2.5 mt-0.5 text-blue-600 focus:ring-blue-500 shrink-0" />
+                <div>
+                  <span class="font-bold text-slate-850">Merge & Skip Duplicates</span>
+                  <p class="text-[10px] text-slate-400 mt-0.5 font-normal leading-relaxed">Adds new articles. If a slug already exists, the article is skipped.</p>
+                </div>
+              </label>
+              
+              <label class="flex items-start text-xs font-medium font-outfit text-slate-700 cursor-pointer">
+                <input type="radio" name="import-mode" value="overwrite" class="mr-2.5 mt-0.5 text-red-650 focus:ring-red-500 shrink-0" />
+                <div>
+                  <span class="font-bold text-slate-850 text-red-750">Clean Overwrite</span>
+                  <p class="text-[10px] text-slate-400 mt-0.5 font-normal leading-relaxed">Deletes all current articles from Firestore before importing the backup file.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Caution Alert -->
+          <div id="overwrite-caution" class="hidden p-3 bg-red-50 border-l-4 border-red-500 text-red-800 text-[11px] leading-relaxed rounded-r shadow-sm">
+            <strong>CRITICAL WARNING</strong>: Overwriting will permanently delete all existing articles from Firestore! There is no undo. Please ensure you have downloaded a backup copy first.
+          </div>
+        </form>
+      </div>
+
+      <div class="p-6 border-t border-slate-50 bg-slate-50/50">
+        <button type="submit" form="import-form" id="import-submit-btn" class="bg-[#2271b1] hover:bg-[#135e96] text-white px-4 py-2 rounded text-xs font-bold font-outfit transition-all active:scale-[0.98] cursor-pointer">
+          Trigger Backup Import
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Show/hide overwrite caution block
+    const importModes = document.getElementsByName('import-mode');
+    const cautionAlert = document.getElementById('overwrite-caution')!;
+    
+    importModes.forEach(radio => {
+      radio.addEventListener('change', (e: any) => {
+        if (e.target.value === 'overwrite') {
+          cautionAlert.classList.remove('hidden');
+        } else {
+          cautionAlert.classList.add('hidden');
+        }
+      });
+    });
+
+    // Form Submission
+    const importForm = document.getElementById('import-form') as HTMLFormElement;
+    importForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('import-file') as HTMLInputElement;
+      const mode = (document.querySelector('input[name="import-mode"]:checked') as HTMLInputElement).value;
+      const alertEl = document.getElementById('import-alert')!;
+      const submitBtn = document.getElementById('import-submit-btn') as HTMLButtonElement;
+
+      if (!fileInput.files || fileInput.files.length === 0) return;
+      const file = fileInput.files[0];
+
+      // Double-confirmation for overwrite strategy
+      if (mode === 'overwrite') {
+        const confirmWipe = confirm('Are you absolutely sure you want to delete all current articles and import this backup? This cannot be undone!');
+        if (!confirmWipe) return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Parsing and uploading...';
+      alertEl.classList.add('hidden');
+
+      try {
+        const fileContent = await file.text();
+        let parsedData;
+        try {
+          parsedData = JSON.parse(fileContent);
+        } catch (jsonErr) {
+          throw new Error('Selected file is not valid JSON.');
+        }
+
+        if (!parsedData || !Array.isArray(parsedData.articles)) {
+          throw new Error('JSON structure must contain an "articles" array.');
+        }
+
+        const res = await fetch('/api/admin/backup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            articles: parsedData.articles,
+            mode
+          })
+        });
+
+        const result = await res.json();
+
+        if (res.ok) {
+          alertEl.textContent = `Success! Imported ${result.count} articles successfully.`;
+          alertEl.className = 'p-3.5 rounded text-xs font-outfit font-semibold border bg-emerald-50 text-emerald-700 border-emerald-250';
+          alertEl.classList.remove('hidden');
+          importForm.reset();
+          cautionAlert.classList.add('hidden');
+        } else {
+          throw new Error(result.error || 'Failed to complete database import');
+        }
+      } catch (err: any) {
+        console.error('Import process failed:', err);
+        alertEl.innerHTML = `<strong>Import failed</strong>: ${err.message || 'connection error'}`;
+        alertEl.className = 'p-3.5 rounded text-xs font-outfit font-semibold border bg-red-50 text-red-700 border-red-200';
+        alertEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Trigger Backup Import';
+      }
+    });
+  </script>
+</AdminLayout>

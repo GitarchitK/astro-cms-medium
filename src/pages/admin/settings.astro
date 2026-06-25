@@ -1,0 +1,215 @@
+---
+export const prerender = false;
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const session = Astro.cookies.get('admin_session');
+if (session?.value !== 'authenticated') return Astro.redirect('/admin');
+---
+
+<AdminLayout title="General Settings" activeNav="settings">
+  
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight">General Settings</h1>
+    <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Configure core details for your digital publication and search indexing</p>
+  </div>
+
+  <!-- Alert Container -->
+  <div id="settings-alert" class="hidden mb-5 p-4 rounded text-xs font-semibold font-outfit border animate-in fade-in duration-200"></div>
+
+  <!-- Loading State Spinner -->
+  <div id="loading-state" class="bg-white border border-[#c3c4c7] rounded p-12 text-center shadow-sm">
+    <div class="inline-flex items-center justify-center gap-2 text-slate-500 font-medium">
+      <svg class="w-5 h-5 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+      <span>Loading configurations...</span>
+    </div>
+  </div>
+
+  <!-- WordPress-style Settings Form Table (Hidden until loaded) -->
+  <form id="settings-form" class="hidden bg-white border border-[#c3c4c7] p-6 rounded shadow-sm max-w-3xl font-outfit text-xs space-y-6">
+    
+    <!-- Group 1: General Info -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Site Identity</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Site Title</label>
+        <div class="md:col-span-3">
+          <input type="text" id="title" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Tagline</label>
+        <div class="md:col-span-3">
+          <input type="text" id="tagline" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500" />
+          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">In a few words, explain what this site is about.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 2: URLs & Email -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Addresses & Contacts</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Site Address (URL)</label>
+        <div class="md:col-span-3">
+          <input type="url" id="siteUrl" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 font-mono" required />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Administration Email Address</label>
+        <div class="md:col-span-3">
+          <input type="email" id="adminEmail" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required />
+          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">This address is used for admin purposes, like new user notifications.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 3: Writing & Reading Settings -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Blogging & Reading Rules</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Blog Pages Show at Most</label>
+        <div class="md:col-span-3 flex items-center gap-2">
+          <input type="number" id="postsPerPage" min="1" max="100" class="w-20 bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 font-mono" required />
+          <span class="text-slate-550 font-medium">posts per page</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 3.5: Google Services Integration -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Google Services Integration</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">GA4 Property ID</label>
+        <div class="md:col-span-3">
+          <input type="text" id="ga4PropertyId" placeholder="e.g. 403829283" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 font-mono" />
+          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5 font-outfit">Enter your Google Analytics 4 Property ID (numeric only) to fetch visitor metrics.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 4: Meta SEO Configuration -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Global Home SEO Meta</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Global SEO Title</label>
+        <div class="md:col-span-3">
+          <input type="text" id="seoTitle" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Global SEO Description</label>
+        <div class="md:col-span-3">
+          <textarea id="seoDescription" rows="4" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 resize-none" required></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit bar -->
+    <div class="pt-4 border-t flex justify-end">
+      <button 
+        type="submit" 
+        id="save-settings-btn" 
+        class="bg-[#2271b1] hover:bg-[#135e96] border border-[#2271b1] hover:border-[#135e96] text-white font-bold px-5 py-2.5 rounded transition-all active:scale-[0.98] cursor-pointer"
+      >
+        Save Changes
+      </button>
+    </div>
+
+  </form>
+
+  <script>
+    const form = document.getElementById('settings-form')!;
+    const loader = document.getElementById('loading-state')!;
+    const alertEl = document.getElementById('settings-alert')!;
+
+    // Load Settings
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/admin/settings');
+        if (res.ok) {
+          const settings = await res.json();
+          
+          (document.getElementById('title') as HTMLInputElement).value = settings.title || '';
+          (document.getElementById('tagline') as HTMLInputElement).value = settings.tagline || '';
+          (document.getElementById('siteUrl') as HTMLInputElement).value = settings.siteUrl || '';
+          (document.getElementById('adminEmail') as HTMLInputElement).value = settings.adminEmail || '';
+          (document.getElementById('postsPerPage') as HTMLInputElement).value = settings.postsPerPage || '10';
+          (document.getElementById('seoTitle') as HTMLInputElement).value = settings.seoTitle || '';
+          (document.getElementById('seoDescription') as HTMLTextAreaElement).value = settings.seoDescription || '';
+          (document.getElementById('ga4PropertyId') as HTMLInputElement).value = settings.ga4PropertyId || '';
+
+          // Transition UI
+          loader.classList.add('hidden');
+          form.classList.remove('hidden');
+        } else {
+          throw new Error('Settings API failed');
+        }
+      } catch (err) {
+        console.error(err);
+        loader.innerHTML = `<div class="p-6 text-red-650 font-bold">Failed to load configuration settings. Please refresh the page.</div>`;
+      }
+    }
+
+    // Save Settings
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement;
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving Changes...';
+      alertEl.classList.add('hidden');
+
+      const payload = {
+        title: (document.getElementById('title') as HTMLInputElement).value.trim(),
+        tagline: (document.getElementById('tagline') as HTMLInputElement).value.trim(),
+        siteUrl: (document.getElementById('siteUrl') as HTMLInputElement).value.trim(),
+        adminEmail: (document.getElementById('adminEmail') as HTMLInputElement).value.trim(),
+        postsPerPage: (document.getElementById('postsPerPage') as HTMLInputElement).value,
+        seoTitle: (document.getElementById('seoTitle') as HTMLInputElement).value.trim(),
+        seoDescription: (document.getElementById('seoDescription') as HTMLTextAreaElement).value.trim(),
+        ga4PropertyId: (document.getElementById('ga4PropertyId') as HTMLInputElement).value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          showAlert('Settings saved successfully.', 'success');
+        } else {
+          throw new Error(data.error || 'Failed to save settings');
+        }
+      } catch (err: any) {
+        console.error(err);
+        showAlert(err.message || 'Error occurred while saving configurations.', 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
+      }
+    });
+
+    function showAlert(msg: string, type: 'success' | 'error') {
+      alertEl.textContent = msg;
+      alertEl.className = `mb-5 p-4 rounded text-xs font-semibold font-outfit border animate-in fade-in duration-200 ${type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 'bg-red-50 text-red-700 border-red-200'}`;
+      alertEl.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Run loader
+    loadSettings();
+  </script>
+</AdminLayout>

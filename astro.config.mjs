@@ -6,6 +6,9 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   output: 'server',
   adapter: vercel(),
+  security: {
+    checkOrigin: false,
+  },
   image: {
     remotePatterns: [
       {
@@ -22,7 +25,13 @@ export default defineConfig({
         'firebase/app',
         'firebase/auth',
         'firebase/firestore',
-        'firebase/storage'
+        'firebase/storage',
+        '@tiptap/core',
+        '@tiptap/starter-kit',
+        '@tiptap/extension-link',
+        '@tiptap/extension-image',
+        '@tiptap/extension-underline',
+        '@tiptap/extension-placeholder'
       ]
     },
     ssr: {

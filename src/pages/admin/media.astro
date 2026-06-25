@@ -1,0 +1,346 @@
+---
+export const prerender = false;
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const session = Astro.cookies.get('admin_session');
+if (session?.value !== 'authenticated') return Astro.redirect('/admin');
+---
+
+<AdminLayout title="Media Library" activeNav="media">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight flex items-center gap-2">
+        Media Library
+        <button id="add-new-media-btn" class="bg-white hover:bg-slate-50 border border-[#8c8f94] hover:border-blue-600 text-blue-600 text-xs px-2.5 py-1 rounded transition-colors select-none font-bold font-outfit cursor-pointer">Add New</button>
+      </h1>
+      <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Browse, upload, copy URLs, and manage your media attachments</p>
+    </div>
+  </div>
+
+  <!-- Upload Zone (Hidden by default, toggled by Add New or action=upload parameter) -->
+  <div id="upload-zone" class="hidden bg-white border-2 border-dashed border-[#c3c4c7] rounded p-8 mb-6 text-center transition-all select-none">
+    <div class="max-w-md mx-auto space-y-4">
+      <div class="flex justify-center">
+        <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-bold text-slate-700 font-outfit">Drag files here to upload</p>
+        <p class="text-slate-450 text-xs font-outfit mt-1">or</p>
+      </div>
+      <label class="inline-block bg-white hover:bg-slate-50 border border-[#8c8f94] text-slate-750 font-bold px-4 py-2 rounded text-xs transition-all active:scale-[0.98] cursor-pointer select-none">
+        Select Files
+        <input type="file" id="media-uploader-input" accept="image/*" class="hidden" multiple />
+      </label>
+      
+      <!-- Progress Container -->
+      <div id="upload-progress-container" class="hidden space-y-2">
+        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+          <div id="upload-progress-bar" class="bg-blue-600 h-1.5 w-0 transition-all duration-150 shadow-[0_0_6px_rgba(37,99,235,0.3)]"></div>
+        </div>
+        <p id="upload-progress-status" class="text-[10px] text-slate-500 font-bold font-mono">0% uploaded</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="bg-white border border-[#c3c4c7] p-3 rounded shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-outfit">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-slate-500" id="media-count">Loading files...</span>
+    </div>
+    <div class="relative w-full sm:w-64">
+      <input type="text" id="media-search" placeholder="Search by name..." class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded pl-3 pr-8 py-1.5 focus:outline-none focus:border-blue-500 placeholder-slate-400 font-outfit" />
+      <svg class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </div>
+  </div>
+
+  <!-- Media Grid -->
+  <div id="media-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 mb-8">
+    <!-- Pulse Skeletal loader -->
+    <div class="aspect-square bg-white border border-slate-200 rounded animate-pulse shadow-sm"></div>
+    <div class="aspect-square bg-white border border-slate-200 rounded animate-pulse shadow-sm"></div>
+    <div class="aspect-square bg-white border border-slate-200 rounded animate-pulse shadow-sm"></div>
+    <div class="aspect-square bg-white border border-slate-200 rounded animate-pulse shadow-sm"></div>
+  </div>
+
+  <!-- Attachment Details Modal Overlay (WordPress-style) -->
+  <div id="media-details-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded border border-[#c3c4c7] shadow-2xl max-w-4xl w-full h-[90vh] md:h-[75vh] flex flex-col md:flex-row overflow-hidden relative font-outfit animate-in zoom-in-95 duration-200">
+      
+      <!-- Close Button -->
+      <button id="close-modal-btn" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer z-10 bg-white/80 p-1 rounded-full shadow border border-slate-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+
+      <!-- Left Panel: Preview -->
+      <div class="flex-1 bg-[#f0f0f1] flex items-center justify-center p-6 border-b md:border-b-0 md:border-r border-[#dcdcde] overflow-auto select-none">
+        <img id="modal-img-preview" src="" alt="Attachment preview" class="max-w-full max-h-full object-contain shadow rounded" />
+      </div>
+
+      <!-- Right Panel: Details -->
+      <div class="w-full md:w-80 p-6 flex flex-col justify-between overflow-y-auto bg-slate-50 text-xs">
+        <div class="space-y-4">
+          <h2 class="text-sm font-bold text-slate-800 uppercase tracking-widest font-outfit border-b pb-2">Attachment Details</h2>
+          
+          <div class="space-y-2 text-slate-500 font-medium">
+            <p class="break-all"><strong class="text-slate-700">File name:</strong> <span id="modal-filename" class="font-mono text-[10px]"></span></p>
+            <p><strong class="text-slate-700">File type:</strong> <span id="modal-filetype"></span></p>
+            <p><strong class="text-slate-700">Uploaded on:</strong> <span id="modal-date"></span></p>
+            <p><strong class="text-slate-700">File size:</strong> <span id="modal-size"></span></p>
+          </div>
+
+          <!-- Public Link URL -->
+          <div class="space-y-1.5 pt-2">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">File URL</label>
+            <div class="flex gap-1.5">
+              <input type="text" id="modal-url-input" class="flex-1 bg-white border border-[#8c8f94] text-slate-700 rounded px-2.5 py-1.5 text-[10px] font-mono focus:outline-none" readonly />
+              <button id="modal-copy-btn" class="bg-[#2271b1] hover:bg-[#135e96] text-white font-bold px-3 py-1.5 rounded transition-all active:scale-[0.98] cursor-pointer">Copy</button>
+            </div>
+            <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Public direct download URL</p>
+          </div>
+        </div>
+
+        <div class="border-t border-[#dcdcde] pt-4 mt-6 flex justify-between items-center">
+          <button id="modal-delete-btn" class="text-red-650 hover:text-red-800 font-bold cursor-pointer flex items-center gap-1 focus:outline-none">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            <span>Delete Permanently</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let allMedia: any[] = [];
+    let activeMediaItem: any = null;
+
+    // Toggle Upload panel
+    const addBtn = document.getElementById('add-new-media-btn');
+    const uploadZone = document.getElementById('upload-zone');
+    addBtn?.addEventListener('click', () => {
+      uploadZone?.classList.toggle('hidden');
+    });
+
+    // Check URL parameters (auto-expand upload if action=upload)
+    if (new URLSearchParams(window.location.search).get('action') === 'upload') {
+      uploadZone?.classList.remove('hidden');
+    }
+
+    // Load Media Items
+    async function loadMedia() {
+      try {
+        const res = await fetch('/api/admin/media');
+        if (res.ok) {
+          allMedia = await res.json();
+          renderGrid(allMedia);
+          updateCount();
+        } else {
+          throw new Error('Failed to load media list');
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('media-grid')!.innerHTML = '<div class="col-span-full py-8 text-center text-red-650 font-bold">Failed to load media library files.</div>';
+      }
+    }
+
+    function updateCount() {
+      document.getElementById('media-count')!.textContent = `${allMedia.length} attachment${allMedia.length === 1 ? '' : 's'}`;
+    }
+
+    // Format bytes to human readable sizes
+    function formatBytes(bytes: number, decimals = 2) {
+      if (!+bytes) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    }
+
+    // Render Grid DOM
+    function renderGrid(items: any[]) {
+      const grid = document.getElementById('media-grid')!;
+      if (!items.length) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-450 font-medium">No media attachments found.</div>';
+        return;
+      }
+
+      grid.innerHTML = items.map((item, idx) => {
+        return `
+          <div onclick="window.openMediaDetails(${idx})" class="aspect-square bg-white border border-[#c3c4c7] hover:border-blue-600 rounded overflow-hidden cursor-pointer relative shadow-sm group select-none">
+            <img src="${item.url}" alt="${item.name}" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-200" loading="lazy" />
+            <div class="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-[9px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity font-mono font-medium">${item.name.split('/').pop()}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Handle Client-side search
+    document.getElementById('media-search')?.addEventListener('input', (e) => {
+      const search = (e.target as HTMLInputElement).value.toLowerCase();
+      const filtered = allMedia.filter(m => m.name.toLowerCase().includes(search));
+      renderGrid(filtered);
+    });
+
+    // Modal Operations
+    const modal = document.getElementById('media-details-modal')!;
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    
+    (window as any).openMediaDetails = function(index: number) {
+      activeMediaItem = allMedia[index];
+      if (!activeMediaItem) return;
+
+      (document.getElementById('modal-img-preview') as HTMLImageElement).src = activeMediaItem.url;
+      document.getElementById('modal-filename')!.textContent = activeMediaItem.name.split('/').pop();
+      document.getElementById('modal-filetype')!.textContent = activeMediaItem.contentType;
+      document.getElementById('modal-date')!.textContent = new Date(activeMediaItem.updated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      document.getElementById('modal-size')!.textContent = formatBytes(activeMediaItem.size);
+      
+      const urlInput = document.getElementById('modal-url-input') as HTMLInputElement;
+      urlInput.value = activeMediaItem.url;
+
+      modal.classList.remove('hidden');
+    };
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      activeMediaItem = null;
+    }
+
+    closeModalBtn?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Copy URL
+    document.getElementById('modal-copy-btn')?.addEventListener('click', () => {
+      const urlInput = document.getElementById('modal-url-input') as HTMLInputElement;
+      urlInput.select();
+      navigator.clipboard.writeText(urlInput.value);
+      
+      const copyBtn = document.getElementById('modal-copy-btn') as HTMLButtonElement;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = 'Copy', 1500);
+    });
+
+    // Delete Media
+    document.getElementById('modal-delete-btn')?.addEventListener('click', async () => {
+      if (!activeMediaItem) return;
+      if (!confirm(`Are you sure you want to permanently delete "${activeMediaItem.name.split('/').pop()}"?\nThis cannot be undone.`)) return;
+
+      const deleteBtn = document.getElementById('modal-delete-btn') as HTMLButtonElement;
+      deleteBtn.disabled = true;
+      deleteBtn.textContent = 'Deleting...';
+
+      try {
+        const res = await fetch(`/api/admin/media?name=${encodeURIComponent(activeMediaItem.name)}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          closeModal();
+          loadMedia();
+        } else {
+          alert('Failed to delete media file from Storage');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred during deletion');
+      } finally {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          <span>Delete Permanently</span>
+        `;
+      }
+    });
+
+    // Dropzone drag-and-drop & manual upload
+    const fileInput = document.getElementById('media-uploader-input') as HTMLInputElement;
+    
+    // Listen to changes on standard file input
+    fileInput?.addEventListener('change', async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files?.length) return;
+      await uploadMultipleFiles(Array.from(files));
+    });
+
+    // Drag and drop events
+    uploadZone?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.className = 'bg-blue-50/50 border-2 border-dashed border-blue-500 rounded p-8 mb-6 text-center select-none';
+    });
+    
+    uploadZone?.addEventListener('dragleave', () => {
+      uploadZone.className = 'bg-white border-2 border-dashed border-[#c3c4c7] rounded p-8 mb-6 text-center select-none';
+    });
+    
+    uploadZone?.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      uploadZone.className = 'bg-white border-2 border-dashed border-[#c3c4c7] rounded p-8 mb-6 text-center select-none';
+      const files = e.dataTransfer?.files;
+      if (!files?.length) return;
+      await uploadMultipleFiles(Array.from(files));
+    });
+
+    // Helper to upload list of files sequentially
+    async function uploadMultipleFiles(files: File[]) {
+      const progressContainer = document.getElementById('upload-progress-container')!;
+      const progressBar = document.getElementById('upload-progress-bar')!;
+      const progressStatus = document.getElementById('upload-progress-status')!;
+
+      progressContainer.classList.remove('hidden');
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        progressStatus.textContent = `Uploading ${file.name} (${i + 1}/${files.length})...`;
+        progressBar.style.width = '0%';
+
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('folder', 'articles'); // upload to standard folder path
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/admin/upload');
+            xhr.withCredentials = true;
+
+            xhr.upload.onprogress = (event) => {
+              if (event.lengthComputable) {
+                const pct = Math.round((event.loaded / event.total) * 100);
+                progressBar.style.width = `${pct}%`;
+                progressStatus.textContent = `Uploading ${file.name} (${i + 1}/${files.length}): ${pct}%`;
+              }
+            };
+
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) resolve();
+              else reject(new Error(`Upload failed: ${xhr.status}`));
+            };
+
+            xhr.onerror = () => reject(new Error('Network error during upload'));
+            xhr.send(formData);
+          });
+        } catch (err: any) {
+          console.error(err);
+          alert(`Upload failed for ${file.name}: ${err.message}`);
+        }
+      }
+
+      progressStatus.textContent = 'All uploads completed!';
+      progressBar.style.width = '100%';
+
+      setTimeout(() => {
+        progressContainer.classList.add('hidden');
+        fileInput.value = ''; // clear input
+        loadMedia(); // reload library
+      }, 1500);
+    }
+
+    // Load initial data
+    loadMedia();
+  </script>
+</AdminLayout>

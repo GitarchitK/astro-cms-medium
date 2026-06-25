@@ -1,130 +1,112 @@
 import type { APIRoute } from 'astro';
 import { adminDb } from '../lib/firebase-admin';
 
-export const GET: APIRoute = async () => {
-  const baseUrl = 'https://mershal.in';
-  const now = new Date();
-
-  // 1. Static Pages
-  const staticPages = [
-    { path: '', changefreq: 'daily', priority: '1.0', lastmod: now.toISOString() },
-    { path: '/articles', changefreq: 'daily', priority: '0.9', lastmod: now.toISOString() },
-    { path: '/about', changefreq: 'weekly', priority: '0.7', lastmod: now.toISOString() },
-    { path: '/contact', changefreq: 'monthly', priority: '0.6', lastmod: now.toISOString() },
-    { path: '/privacy', changefreq: 'monthly', priority: '0.5', lastmod: now.toISOString() },
-    { path: '/terms', changefreq: 'monthly', priority: '0.5', lastmod: now.toISOString() },
-    { path: '/disclaimer', changefreq: 'monthly', priority: '0.5', lastmod: now.toISOString() }
-  ];
-
-  // 2. Default Built-in Categories
-  const defaultCategories = [
-    'ai-tools',
-    'technology-guides',
-    'software-reviews',
-    'seo-blogging',
-    'web-development',
-    'productivity',
-    'freelancing',
-    'side-hustles',
-    'remote-work',
-    'startup-stories'
-  ];
-
-  let categorySlugs = [...defaultCategories];
-  let articleUrls: { path: string; lastmod: string; changefreq: string; priority: string }[] = [];
-
-  if (adminDb) {
-    try {
-      // Fetch custom categories dynamically from Firestore
-      const categoriesSnap = await adminDb.collection('categories').get();
-      if (!categoriesSnap.empty) {
-        categoriesSnap.docs.forEach(doc => {
-          const slug = doc.data().slug;
-          if (slug && !categorySlugs.includes(slug)) {
-            categorySlugs.push(slug);
-          }
-        });
-      }
-
-      // Fetch published articles
-      const snapshot = await adminDb.collection('articles')
-        .where('status', '==', 'published')
-        .orderBy('publish_date', 'desc')
-        .get();
-
-      articleUrls = snapshot.docs
-        .map(doc => {
-          const d = doc.data();
-          let pDate = null;
-          if (d.publish_date) {
-            if (typeof d.publish_date.toDate === 'function') {
-              pDate = d.publish_date.toDate();
-            } else {
-              pDate = new Date(d.publish_date);
-            }
-          }
-
-          let uDate = pDate;
-          if (d.updated_date) {
-            if (typeof d.updated_date.toDate === 'function') {
-              uDate = d.updated_date.toDate();
-            } else {
-              uDate = new Date(d.updated_date);
-            }
-          }
-
-          return {
-            slug: d.slug || doc.id,
-            categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            publishDate: pDate,
-            modifiedDate: uDate || pDate || now
-          };
-        })
-        // Filter out drafts/future scheduled in memory
-        .filter(art => art.publishDate && art.publishDate <= now)
-        .map(art => ({
-          path: `/${art.categorySlug}/${art.slug}`,
-          lastmod: art.modifiedDate.toISOString(),
-          changefreq: 'weekly',
-          priority: '0.8'
-        }));
-    } catch (e) {
-      console.error('Sitemap dynamic generation firestore error:', e);
+async function getSiteUrl() {
+  let siteUrl = 'https://mershal.in';
+  if (!adminDb) return siteUrl;
+  try {
+    const settingsDoc = await adminDb.collection('settings').doc('general').get();
+    if (settingsDoc.exists) {
+      siteUrl = settingsDoc.data()?.siteUrl || 'https://mershal.in';
     }
+  } catch (e) {
+    console.warn('Could not load siteUrl from settings:', e);
+  }
+  return siteUrl.replace(/\/$/, ''); // Remove trailing slash if present
+}
+
+export const GET: APIRoute = async () => {
+  if (!adminDb) {
+    return new Response(JSON.stringify({ error: 'DB not configured' }), { status: 503 });
   }
 
-  // Combine categories
-  const categoryPages = categorySlugs.map(slug => ({
-    path: `/category/${slug}`,
-    changefreq: 'weekly',
-    priority: '0.7',
-    lastmod: now.toISOString()
-  }));
+  try {
+    const siteUrl = await getSiteUrl();
+    const now = new Date();
 
-  // Combine all sitemap entries
-  const allUrls = [...staticPages, ...categoryPages, ...articleUrls];
+    // 1. Fetch all published categories
+    const categoriesSnapshot = await adminDb.collection('categories').get();
+    const categories = categoriesSnapshot.docs.map(doc => {
+      const d = doc.data();
+      return d.slug || '';
+    }).filter(Boolean);
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+    // 2. Fetch all published articles (excluding drafts and scheduled posts)
+    const articlesSnapshot = await adminDb.collection('articles')
+      .where('status', '==', 'published')
+      .get();
+
+    const articles = articlesSnapshot.docs
+      .map(doc => {
+        const d = doc.data();
+        const pDate = d.publish_date?.toDate?.() || 
+                      (d.publish_date instanceof Date ? d.publish_date : null);
+        const uDate = d.updated_date?.toDate?.() || pDate || now;
+        
+        return {
+          slug: d.slug || '',
+          categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          publishDate: pDate,
+          modifiedDate: uDate
+        };
+      })
+      .filter(art => art.slug && art.publishDate && art.publishDate <= now);
+
+    // 3. Assemble sitemap XML contents
+    const urls = [];
+
+    // Homepage
+    urls.push(`
+      <url>
+        <loc>${siteUrl}/</loc>
+        <lastmod>${now.toISOString()}</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+      </url>
+    `);
+
+    // Categories
+    categories.forEach(slug => {
+      urls.push(`
+        <url>
+          <loc>${siteUrl}/category/${slug}</loc>
+          <lastmod>${now.toISOString()}</lastmod>
+          <changefreq>weekly</changefreq>
+          <priority>0.7</priority>
+        </url>
+      `);
+    });
+
+    // Articles
+    articles.forEach(art => {
+      urls.push(`
+        <url>
+          <loc>${siteUrl}/${art.categorySlug}/${art.slug}</loc>
+          <lastmod>${art.modifiedDate.toISOString()}</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.8</priority>
+        </url>
+      `);
+    });
+
+    const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${allUrls
-    .map(
-      url => `
-  <url>
-    <loc>${baseUrl}${url.path}</loc>
-    <lastmod>${url.lastmod}</lastmod>
-    <changefreq>${url.changefreq}</changefreq>
-    <priority>${url.priority}</priority>
-  </url>`
-    )
-    .join('')}
+  ${urls.join('').trim()}
 </urlset>`;
 
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8',
-      'X-Content-Type-Options': 'nosniff',
-      'Cache-Control': 'public, max-age=3600, s-maxage=18000'
-    }
-  });
+    return new Response(sitemapXml, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/xml; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Failed to generate sitemap:', error);
+    return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>', {
+      status: 500,
+      headers: { 'Content-Type': 'application/xml' }
+    });
+  }
 };

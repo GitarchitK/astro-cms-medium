@@ -7,132 +7,277 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
 ---
 
 <AdminLayout title="Categories" activeNav="categories">
-  <div class="mb-8">
-    <h1 class="text-3xl font-black font-outfit text-slate-800 tracking-tight">Categories</h1>
-    <p class="text-slate-500 text-sm mt-1 font-outfit font-medium">Manage your content clusters & tags</p>
+  
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-black font-outfit text-slate-800 tracking-tight">Categories</h1>
+    <p class="text-slate-500 text-xs mt-0.5 font-outfit font-medium">Add, delete, and manage your content category clusters</p>
   </div>
 
-  <div id="alert" class="hidden mb-5 p-4 rounded-xl text-xs font-semibold font-outfit border animate-in fade-in duration-200"></div>
+  <!-- Alert Container -->
+  <div id="categories-alert" class="hidden mb-4 p-4 rounded text-xs font-semibold font-outfit border animate-in fade-in duration-200"></div>
 
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-6 max-w-5xl">
-    <!-- Left: Add New Form -->
-    <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-fit">
-      <h2 class="text-base font-bold text-slate-800 mb-5 font-outfit flex items-center gap-2">
-        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Add Custom Category
-      </h2>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 font-outfit mb-1.5">Name</label>
-          <input id="cat-name" type="text" placeholder="e.g. Finance Advice" class="w-full bg-white border border-slate-250 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-outfit placeholder-slate-400" />
+  <!-- WP-style Categories Grid Split -->
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-6 font-outfit text-xs">
+    
+    <!-- Left Column: Add New Form (2 Cols) -->
+    <div class="md:col-span-2 space-y-4">
+      <div class="bg-white border border-[#c3c4c7] p-5 rounded shadow-sm">
+        <h2 class="text-sm font-bold text-slate-800 mb-4 font-outfit">Add New Category</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name</label>
+            <input 
+              id="cat-name" 
+              type="text" 
+              placeholder="e.g. Technology Guides" 
+              class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500" 
+              required
+            />
+            <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1">The name is how it appears on your site.</p>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Slug</label>
+            <input 
+              id="cat-slug" 
+              type="text" 
+              placeholder="e.g. technology-guides" 
+              class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 font-mono" 
+              required
+            />
+            <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1">The “slug” is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens.</p>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
+            <textarea 
+              id="cat-desc" 
+              rows="4" 
+              placeholder="Brief description of this cluster..." 
+              class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 resize-none"
+            ></textarea>
+            <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1">The description is not prominent by default; however, some themes may show it.</p>
+          </div>
+          
+          <button 
+            id="add-cat-btn" 
+            class="bg-[#2271b1] hover:bg-[#135e96] border border-[#2271b1] hover:border-[#135e96] text-white font-bold px-4 py-2 rounded text-xs transition-all active:scale-[0.98] cursor-pointer"
+          >
+            Add New Category
+          </button>
         </div>
-        <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 font-outfit mb-1.5">Slug</label>
-          <input id="cat-slug" type="text" placeholder="e.g. finance-advice" class="w-full bg-white border border-slate-250 text-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-mono placeholder-slate-400" />
-        </div>
-        <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 font-outfit mb-1.5">Description (optional)</label>
-          <textarea id="cat-desc" rows="2" placeholder="Brief description..." class="w-full bg-white border border-slate-250 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-outfit resize-none placeholder-slate-400"></textarea>
-        </div>
-        <button id="add-cat-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/10 text-white py-3 rounded-xl text-sm font-bold font-outfit transition-all active:scale-[0.98] cursor-pointer">
-          Add Category
-        </button>
       </div>
     </div>
 
-    <!-- Right: List Grid -->
-    <div class="md:col-span-3">
-      <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest font-outfit mb-4">Content Clusters</h2>
-      <div id="cat-list" class="space-y-3">
-        <div class="p-6 text-slate-400 text-sm flex items-center justify-center gap-3 bg-white border border-slate-200 rounded-2xl shadow-sm animate-pulse">
-          <svg class="w-5 h-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-          <span>Loading categories...</span>
+    <!-- Right Column: Categories List Table (3 Cols) -->
+    <div class="md:col-span-3 space-y-4">
+      
+      <!-- List search filter -->
+      <div class="bg-white border border-[#c3c4c7] p-3 rounded shadow-sm flex items-center justify-between gap-3">
+        <span id="list-count" class="font-bold text-slate-500">Loading categories...</span>
+        <div class="relative w-48 sm:w-64">
+          <input type="text" id="search-cats" placeholder="Search Categories..." class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded pl-3 pr-8 py-1.5 focus:outline-none focus:border-blue-500 placeholder-slate-400" />
+          <svg class="w-4.5 h-4.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </div>
       </div>
+
+      <!-- Categories Table -->
+      <div class="bg-white border border-[#c3c4c7] rounded shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs font-outfit">
+            <thead>
+              <tr class="bg-slate-50 border-b border-[#c3c4c7] text-[#50575e] uppercase tracking-wide font-bold select-none">
+                <th class="px-4 py-3 font-bold">Name</th>
+                <th class="px-4 py-3 font-bold">Description</th>
+                <th class="px-4 py-3 font-bold w-36">Slug</th>
+                <th class="px-4 py-3 font-bold w-20 text-center">Count</th>
+              </tr>
+            </thead>
+            <tbody id="categories-table-body" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="4" class="px-4 py-12 text-center text-slate-400 font-medium">
+                  <div class="flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span>Loading categories...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
+
   </div>
 
   <script>
+    let allCategories: any[] = [];
+
+
+    // Slug generation listener
     document.getElementById('cat-name')?.addEventListener('input', (e) => {
       (document.getElementById('cat-slug') as HTMLInputElement).value =
-        (e.target as HTMLInputElement).value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        (e.target as HTMLInputElement).value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
     });
 
-    function showAlert(msg: string, type: 'success' | 'error') {
-      const el = document.getElementById('alert')!;
-      el.textContent = msg;
-      el.className = `mb-5 p-4 rounded-xl text-xs font-semibold font-outfit border animate-in fade-in duration-200 ${type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 'bg-red-50 text-red-700 border-red-200'}`;
-      el.classList.remove('hidden');
-    }
-
+    // Load Categories from API
     async function loadCategories() {
-      const res = await fetch('/api/admin/categories');
-      const cats = await res.json();
-      const list = document.getElementById('cat-list')!;
-      if (!cats.length) { 
-        list.innerHTML = '<div class="p-8 bg-white border border-slate-200 rounded-2xl text-slate-400 text-sm text-center font-medium font-outfit">No categories yet.</div>'; 
-        return; 
+      try {
+        const res = await fetch('/api/admin/categories');
+        if (res.ok) {
+          allCategories = await res.json();
+          updateCounts();
+          applyFilterAndRender();
+        } else {
+          throw new Error('Failed to load categories');
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('categories-table-body')!.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-red-650 font-bold">Failed to load categories. Please refresh.</td></tr>`;
       }
-      list.innerHTML = cats.map((c: any) => `
-        <div class="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between hover:bg-slate-50 transition-colors shadow-sm">
-          <div class="pr-4">
-            <div class="flex items-center gap-2 flex-wrap">
-              <p class="text-sm font-bold text-slate-800">${c.name}</p>
-              ${c.builtin ? '<span class="text-[9px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded-md font-outfit">built-in</span>' : ''}
-            </div>
-            <p class="text-[10px] text-slate-450 font-mono mt-0.5">${c.slug}</p>
-            <p class="text-xs text-slate-400 font-outfit mt-1 flex items-center gap-1">
-              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              ${c.postCount || 0} articles
-            </p>
-            ${c.description ? `<p class="text-[11px] text-slate-500 mt-1 font-outfit leading-relaxed">${c.description}</p>` : ''}
-          </div>
-          <div class="flex items-center gap-3 shrink-0">
-            <a href="/category/${c.slug}" target="_blank" class="text-xs font-bold text-slate-450 hover:text-slate-700 transition-colors">View</a>
-            ${!c.builtin ? `<button onclick="window.deleteCategory('${c.id}', '${c.name}')" class="text-xs font-bold text-red-650 hover:text-red-850 transition-colors cursor-pointer">Delete</button>` : ''}
-          </div>
-        </div>
-      `).join('');
     }
 
+    function updateCounts() {
+      document.getElementById('list-count')!.textContent = `${allCategories.length} category cluster${allCategories.length === 1 ? '' : 's'}`;
+    }
+
+    // Filter categories list client-side
+    function applyFilterAndRender() {
+      const search = (document.getElementById('search-cats') as HTMLInputElement).value.toLowerCase();
+      const filtered = allCategories.filter(c =>
+        c.name.toLowerCase().includes(search) ||
+        c.slug.toLowerCase().includes(search)
+      );
+      renderTable(filtered);
+    }
+
+    document.getElementById('search-cats')?.addEventListener('input', () => {
+      applyFilterAndRender();
+    });
+
+    // Render categories rows
+    function renderTable(items: any[]) {
+      const tbody = document.getElementById('categories-table-body')!;
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 font-medium">No category matches found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(c => {
+        const builtinBadge = c.builtin
+          ? '<span class="text-slate-400 border border-slate-200 px-1 py-0.5 rounded text-[8px] bg-slate-50 font-bold uppercase tracking-wider ml-1.5 select-none">built-in</span>'
+          : '';
+
+        let actionLinks = '';
+        if (c.builtin) {
+          actionLinks = `<span class="text-slate-400 italic">No actions available</span>`;
+        } else {
+          actionLinks = `
+            <div class="flex items-center gap-2 text-[10px] font-semibold text-[#50575e] mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+              <button onclick="window.deleteCategory('${c.id}', '${c.name.replace(/'/g, "\\'")}')" class="text-red-650 hover:text-red-800 cursor-pointer focus:outline-none">Delete</button>
+              <span class="text-slate-300">|</span>
+              <a href="/category/${c.slug}" target="_blank" class="text-[#2271b1] hover:text-[#135e96]">View</a>
+            </div>
+          `;
+        }
+
+        return `
+          <tr class="group hover:bg-[#f6f7f7] transition-colors">
+            <td class="px-4 py-3.5 min-w-[150px]">
+              <div class="flex items-center">
+                <span class="font-bold text-slate-800 text-sm">${c.name}</span>
+                ${builtinBadge}
+              </div>
+              ${actionLinks}
+            </td>
+            <td class="px-4 py-3.5 text-slate-500 max-w-xs leading-relaxed font-medium">${c.description || '—'}</td>
+            <td class="px-4 py-3.5 text-slate-500 font-mono font-medium">${c.slug}</td>
+            <td class="px-4 py-3.5 text-center font-bold text-slate-600">${c.postCount ?? 0}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Submit New Category
     document.getElementById('add-cat-btn')?.addEventListener('click', async () => {
-      const name = (document.getElementById('cat-name') as HTMLInputElement).value.trim();
-      const slug = (document.getElementById('cat-slug') as HTMLInputElement).value.trim();
-      const description = (document.getElementById('cat-desc') as HTMLTextAreaElement).value.trim();
-      if (!name || !slug) { showAlert('Name and slug are required', 'error'); return; }
+      const nameInput = document.getElementById('cat-name') as HTMLInputElement;
+      const slugInput = document.getElementById('cat-slug') as HTMLInputElement;
+      const descInput = document.getElementById('cat-desc') as HTMLTextAreaElement;
+
+      const name = nameInput.value.trim();
+      const slug = slugInput.value.trim();
+      const description = descInput.value.trim();
+
+      if (!name || !slug) {
+        showGlobalAlert('Name and slug are required fields', 'error');
+        return;
+      }
 
       const btn = document.getElementById('add-cat-btn') as HTMLButtonElement;
-      btn.disabled = true; btn.textContent = 'Adding...';
+      btn.disabled = true;
+      btn.textContent = 'Adding...';
 
-      const res = await fetch('/api/admin/categories', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ name, slug, description }) 
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showAlert('Category added successfully!', 'success');
-        (document.getElementById('cat-name') as HTMLInputElement).value = '';
-        (document.getElementById('cat-slug') as HTMLInputElement).value = '';
-        (document.getElementById('cat-desc') as HTMLTextAreaElement).value = '';
-        loadCategories();
-      } else {
-        showAlert(data.error || 'Failed to add category', 'error');
+      try {
+        const res = await fetch('/api/admin/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, slug, description })
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          showGlobalAlert(`Category "${name}" created successfully.`, 'success');
+          nameInput.value = '';
+          slugInput.value = '';
+          descInput.value = '';
+          
+          loadCategories();
+        } else {
+          throw new Error(data.error || 'Failed to create category');
+        }
+      } catch (err: any) {
+        console.error(err);
+        showGlobalAlert(err.message || 'Error occurred while creating category.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Add New Category';
       }
-      btn.disabled = false; btn.textContent = 'Add Category';
     });
 
+    // Delete category
     (window as any).deleteCategory = async function(id: string, name: string) {
-      if (!confirm(`Are you sure you want to delete the category "${name}"?`)) return;
-      const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
-      if (res.ok) { 
-        showAlert('Category deleted.', 'success'); 
-        loadCategories(); 
-      } else {
-        showAlert('Failed to delete category.', 'error');
+      if (!confirm(`Are you sure you want to permanently delete the custom category "${name}"?\nPosts in this category will not be deleted but may be uncategorized.`)) return;
+
+      try {
+        const res = await fetch(`/api/admin/categories?id=${id}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          showGlobalAlert(`Category "${name}" deleted.`, 'success');
+          loadCategories();
+        } else {
+          showGlobalAlert('Failed to delete category.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showGlobalAlert('Error deleting category.', 'error');
       }
     };
 
+    function showGlobalAlert(msg: string, type: 'success' | 'error') {
+      const el = document.getElementById('categories-alert')!;
+      el.textContent = msg;
+      el.className = `mb-4 p-4 rounded text-xs font-semibold font-outfit border animate-in fade-in duration-200 ${type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 'bg-red-50 text-red-700 border-red-200'}`;
+      el.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Initial load
     loadCategories();
   </script>
 </AdminLayout>

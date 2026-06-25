@@ -1,5 +1,43 @@
 import type { APIRoute } from 'astro';
 import { adminDb } from '../../../lib/firebase-admin';
+import { submitToGoogleIndexing } from '../../../lib/google-api';
+
+async function triggerAutoIndexing(postUrl: string, action: 'URL_UPDATED' | 'URL_DELETED') {
+  if (!adminDb) return;
+  try {
+    const result = await submitToGoogleIndexing(postUrl, action);
+    await adminDb.collection('indexing_logs').add({
+      url: postUrl,
+      action: action === 'URL_UPDATED' ? 'publish' : 'delete',
+      timestamp: new Date().toISOString(),
+      status: 'success',
+      response: JSON.stringify(result)
+    });
+  } catch (err: any) {
+    console.error('Auto-indexing submission failed:', err);
+    await adminDb.collection('indexing_logs').add({
+      url: postUrl,
+      action: action === 'URL_UPDATED' ? 'publish' : 'delete',
+      timestamp: new Date().toISOString(),
+      status: 'failed',
+      response: err.message || 'Unknown Indexing API error'
+    });
+  }
+}
+
+async function getSiteUrl() {
+  let siteUrl = 'https://mershal.in';
+  if (!adminDb) return siteUrl;
+  try {
+    const settingsDoc = await adminDb.collection('settings').doc('general').get();
+    if (settingsDoc.exists) {
+      siteUrl = settingsDoc.data()?.siteUrl || 'https://mershal.in';
+    }
+  } catch (e) {
+    console.warn('Could not load siteUrl from settings:', e);
+  }
+  return siteUrl;
+}
 
 function isAuthenticated(cookies: any) {
   return cookies.get('admin_session')?.value === 'authenticated';
@@ -46,6 +84,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         publishDate: d.publish_date?.toDate?.()?.toISOString() || null,
         faq_items: d.faq_items || [],
         isCustomHtml: !!d.isCustomHtml,
+        customCss: d.customCss || '',
       }), {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -87,7 +126,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   try {
     const data = await request.json();
-    let { title, slug, excerpt, author, content, featuredImage, status, publishDate, tags, faq_items, isCustomHtml } = data;
+    let { title, slug, excerpt, author, content, featuredImage, status, publishDate, tags, faq_items, isCustomHtml, customCss } = data;
 
     if (!title) {
       return new Response(JSON.stringify({ error: 'Title is required' }), { status: 400 });
@@ -123,9 +162,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updated_date: new Date(),
       faq_items: faq_items || [],
       isCustomHtml: !!isCustomHtml,
+      customCss: customCss || '',
     };
 
     const ref = await adminDb.collection('articles').add(articleDoc);
+
+    if (status === 'published') {
+      getSiteUrl().then(siteUrl => {
+        const catSlug = (data.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const postUrl = `${siteUrl}/${catSlug}/${slug}`;
+        triggerAutoIndexing(postUrl, 'URL_UPDATED');
+      });
+    }
 
     return new Response(JSON.stringify({ id: ref.id, slug }), {
       status: 201,
@@ -150,7 +198,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const { id, ...fields } = data;
     if (!id) return new Response(JSON.stringify({ error: 'Missing id' }), { status: 400 });
 
-    let { title, slug, excerpt, author, content, featuredImage, status, publishDate, tags, faq_items, isCustomHtml } = fields;
+    let { title, slug, excerpt, author, content, featuredImage, status, publishDate, tags, faq_items, isCustomHtml, customCss } = fields;
 
     if (!title) {
       return new Response(JSON.stringify({ error: 'Title is required' }), { status: 400 });
@@ -161,6 +209,22 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const readingTime = Math.ceil(wordCount / 200);
 
     const publishDateObj = publishDate ? new Date(publishDate) : new Date();
+
+    // 1. Check original publish state and URL to see if it changed
+    let wasPublished = false;
+    let oldUrl = '';
+    try {
+      const doc = await adminDb.collection('articles').doc(id).get();
+      if (doc.exists) {
+        const d = doc.data() || {};
+        wasPublished = d.status === 'published';
+        const siteUrl = await getSiteUrl();
+        const catSlug = (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        oldUrl = `${siteUrl}/${catSlug}/${d.slug}`;
+      }
+    } catch (e) {
+      console.warn('Could not read original post for indexing changes:', e);
+    }
 
     const articleDoc = {
       title,
@@ -180,9 +244,28 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       updated_date: new Date(),
       faq_items: faq_items || [],
       isCustomHtml: !!isCustomHtml,
+      customCss: customCss || '',
     };
 
+    // 2. Perform database update
     await adminDb.collection('articles').doc(id).update(articleDoc);
+
+    // 3. Trigger Google Indexing API notifications
+    if (status === 'published') {
+      getSiteUrl().then(siteUrl => {
+        const catSlug = (fields.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const postUrl = `${siteUrl}/${catSlug}/${slug}`;
+        
+        // If URL changed, send DELETE for the old one and UPDATE for the new one
+        if (wasPublished && oldUrl && oldUrl !== postUrl) {
+          triggerAutoIndexing(oldUrl, 'URL_DELETED');
+        }
+        triggerAutoIndexing(postUrl, 'URL_UPDATED');
+      });
+    } else if (wasPublished && status === 'draft' && oldUrl) {
+      // Article changed from published to draft (unpublished)
+      triggerAutoIndexing(oldUrl, 'URL_DELETED');
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },
@@ -205,6 +288,20 @@ export const DELETE: APIRoute = async ({ url, cookies }) => {
   if (!id) return new Response(JSON.stringify({ error: 'Missing id' }), { status: 400 });
 
   try {
+    try {
+      const doc = await adminDb.collection('articles').doc(id).get();
+      if (doc.exists) {
+        const d = doc.data() || {};
+        if (d.status === 'published') {
+          const siteUrl = await getSiteUrl();
+          const catSlug = (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          const postUrl = `${siteUrl}/${catSlug}/${d.slug}`;
+          triggerAutoIndexing(postUrl, 'URL_DELETED');
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to retrieve post for delete indexing notification:', err);
+    }
     await adminDb.collection('articles').doc(id).delete();
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },

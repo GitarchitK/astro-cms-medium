@@ -25,3 +25,7 @@ pnpm-debug.log*
 # System files
 .DS_Store
 Thumbs.db
+
+# Scrap files
+extracted_article_raw.txt
+
