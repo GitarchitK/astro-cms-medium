@@ -50,22 +50,45 @@ if (adminDb && slug) {
                           contentStr.match(/<meta\s+property="og:description"\s+content="([\s\S]*?)"/i);
         const parsedMetaDesc = descMatch ? descMatch[1].trim() : null;
 
+        // Extract excerpt meta tag
+        const excerptMatch = contentStr.match(/<meta\s+name="excerpt"\s+content="([\s\S]*?)"/i);
+        const parsedExcerpt = excerptMatch ? excerptMatch[1].trim() : null;
+
+        // Extract author meta tag
+        const authorMatch = contentStr.match(/<meta\s+name="author"\s+content="([\s\S]*?)"/i);
+        const parsedAuthor = authorMatch ? authorMatch[1].trim() : null;
+
+        // Extract category meta tag
+        const categoryMatch = contentStr.match(/<meta\s+name="category"\s+content="([\s\S]*?)"/i);
+        const parsedCategory = categoryMatch ? categoryMatch[1].trim() : null;
+
+        // Extract featured image meta tag
+        const imageMatch = contentStr.match(/<meta\s+property="og:image"\s+content="([\s\S]*?)"/i) ||
+                           contentStr.match(/<meta\s+name="twitter:image"\s+content="([\s\S]*?)"/i) ||
+                           contentStr.match(/<link\s+rel="image_src"\s+href="([\s\S]*?)"/i);
+        const parsedFeaturedImage = imageMatch ? imageMatch[1].trim() : null;
+
+        // Extract keywords/tags meta tag
+        const keywordsMatch = contentStr.match(/<meta\s+name="keywords"\s+content="([\s\S]*?)"/i) ||
+                              contentStr.match(/<meta\s+name="tags"\s+content="([\s\S]*?)"/i);
+        const parsedTags = keywordsMatch ? keywordsMatch[1].split(',').map((t: string) => t.trim()).filter(Boolean) : null;
+
         article = {
           id: doc.id,
           title: d.title || '',
           slug: d.slug || doc.id,
-          excerpt: d.excerpt || '',
+          excerpt: parsedExcerpt || d.excerpt || '',
           content: d.content || '',
           metaTitle: parsedMetaTitle || d.meta_title || d.title,
           metaDescription: parsedMetaDesc || d.meta_description || d.excerpt || '',
-          featuredImage: d.featured_image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
-          category: d.category || 'AI Tools',
-          categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          author: d.author || 'Mershal Editorial Team',
+          featuredImage: parsedFeaturedImage || d.featured_image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+          category: parsedCategory || d.category || 'AI Tools',
+          categorySlug: (parsedCategory || d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          author: parsedAuthor || d.author || 'Mershal Editorial Team',
           publishDate: pDate,
           modifiedDate: uDate,
           readingTime: d.readingTime || 5,
-          tags: d.tags || [],
+          tags: parsedTags || d.tags || [],
           status: d.status || 'published',
           faq_items: d.faq_items || [],
           isCustomHtml: !!d.isCustomHtml || d.content?.toLowerCase().includes('<html') || d.content?.toLowerCase().includes('<!doctype'),
