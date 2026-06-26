@@ -15,98 +15,157 @@ async function getSiteUrl() {
   return siteUrl.replace(/\/$/, ''); // Remove trailing slash if present
 }
 
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
+
 export const GET: APIRoute = async () => {
-  if (!adminDb) {
-    return new Response(JSON.stringify({ error: 'DB not configured' }), { status: 503 });
-  }
+  const now = new Date();
+  let siteUrl = 'https://mershal.in';
+  
+  // Static pages list
+  const staticPages = [
+    { path: '', changefreq: 'daily', priority: '1.0' },
+    { path: '/articles', changefreq: 'daily', priority: '0.8' },
+    { path: '/about', changefreq: 'monthly', priority: '0.5' },
+    { path: '/contact', changefreq: 'monthly', priority: '0.5' },
+    { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
+    { path: '/terms', changefreq: 'monthly', priority: '0.3' },
+    { path: '/disclaimer', changefreq: 'monthly', priority: '0.3' }
+  ];
 
   try {
-    const siteUrl = await getSiteUrl();
-    const now = new Date();
+    siteUrl = await getSiteUrl();
 
-    // 1. Fetch all published categories
-    const categoriesSnapshot = await adminDb.collection('categories').get();
-    const categories = categoriesSnapshot.docs.map(doc => {
-      const d = doc.data();
-      return d.slug || '';
-    }).filter(Boolean);
+    let articles: any[] = [];
+    let activeCategorySlugs = new Set<string>();
+    let latestArticleDate = new Date();
 
-    // 2. Fetch all published articles (excluding drafts and scheduled posts)
-    const articlesSnapshot = await adminDb.collection('articles')
-      .where('status', '==', 'published')
-      .get();
+    if (adminDb) {
+      // 1. Fetch published articles (excluding drafts/scheduled) with field selection
+      const articlesSnapshot = await adminDb.collection('articles')
+        .where('status', '==', 'published')
+        .select('slug', 'category', 'publish_date', 'updated_date')
+        .get();
 
-    const articles = articlesSnapshot.docs
-      .map(doc => {
-        const d = doc.data();
-        const pDate = d.publish_date?.toDate?.() || 
-                      (d.publish_date instanceof Date ? d.publish_date : null);
-        const uDate = d.updated_date?.toDate?.() || pDate || now;
-        
-        return {
-          slug: d.slug || '',
-          categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          publishDate: pDate,
-          modifiedDate: uDate
-        };
-      })
-      .filter(art => art.slug && art.publishDate && art.publishDate <= now);
+      articles = articlesSnapshot.docs
+        .map(doc => {
+          const d = doc.data();
+          const pDate = d.publish_date?.toDate?.() || 
+                        (d.publish_date instanceof Date ? d.publish_date : null);
+          const uDate = d.updated_date?.toDate?.() || pDate || now;
+          
+          return {
+            slug: d.slug || '',
+            categorySlug: (d.category || 'ai-tools').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            publishDate: pDate,
+            modifiedDate: uDate
+          };
+        })
+        .filter(art => art.slug && art.publishDate && art.publishDate <= now);
 
-    // 3. Assemble sitemap XML contents
-    const urls = [];
+      // Determine active categories and latest update date
+      if (articles.length > 0) {
+        const dates = articles.map(art => art.modifiedDate).filter(Boolean);
+        if (dates.length > 0) {
+          latestArticleDate = new Date(Math.max(...dates.map(d => d.getTime())));
+        }
+        articles.forEach(art => {
+          if (art.categorySlug) {
+            activeCategorySlugs.add(art.categorySlug);
+          }
+        });
+      }
+    }
 
-    // Homepage
-    urls.push(`
-      <url>
-        <loc>${siteUrl}/</loc>
-        <lastmod>${now.toISOString()}</lastmod>
-        <changefreq>daily</changefreq>
-        <priority>1.0</priority>
-      </url>
-    `);
+    const urls: string[] = [];
 
-    // Categories
-    categories.forEach(slug => {
+    // Add static pages
+    staticPages.forEach(page => {
+      // For index pages, use the latest article update date to notify crawlers of updates
+      const isIndex = page.path === '' || page.path === '/articles';
+      const lastModDate = isIndex ? latestArticleDate : now;
+      
       urls.push(`
-        <url>
-          <loc>${siteUrl}/category/${slug}</loc>
-          <lastmod>${now.toISOString()}</lastmod>
-          <changefreq>weekly</changefreq>
-          <priority>0.7</priority>
-        </url>
-      `);
+  <url>
+    <loc>${escapeXml(`${siteUrl}${page.path}`)}</loc>
+    <lastmod>${lastModDate.toISOString()}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`);
     });
 
-    // Articles
+    // Add active categories
+    activeCategorySlugs.forEach(slug => {
+      urls.push(`
+  <url>
+    <loc>${escapeXml(`${siteUrl}/category/${slug}`)}</loc>
+    <lastmod>${latestArticleDate.toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`);
+    });
+
+    // Add published articles (sorted by modifiedDate desc)
+    articles.sort((a, b) => b.modifiedDate.getTime() - a.modifiedDate.getTime());
     articles.forEach(art => {
       urls.push(`
-        <url>
-          <loc>${siteUrl}/${art.categorySlug}/${art.slug}</loc>
-          <lastmod>${art.modifiedDate.toISOString()}</lastmod>
-          <changefreq>monthly</changefreq>
-          <priority>0.8</priority>
-        </url>
-      `);
+  <url>
+    <loc>${escapeXml(`${siteUrl}/${art.categorySlug}/${art.slug}`)}</loc>
+    <lastmod>${art.modifiedDate.toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>`);
     });
 
     const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${urls.join('').trim()}
+${urls.join('').trim()}
 </urlset>`;
 
     return new Response(sitemapXml, {
       status: 200,
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff'
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'public, max-age=3600, s-maxage=18000'
       }
     });
 
   } catch (error: any) {
     console.error('Failed to generate sitemap:', error);
-    return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>', {
-      status: 500,
-      headers: { 'Content-Type': 'application/xml' }
+    
+    // Professional fallback when database is down or failed
+    const fallbackUrls = staticPages.map(page => `
+  <url>
+    <loc>${escapeXml(`${siteUrl}${page.path}`)}</loc>
+    <lastmod>${now.toISOString()}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`).join('');
+
+    const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${fallbackUrls.trim()}
+</urlset>`;
+
+    return new Response(fallbackXml, {
+      status: 200, // Return 200 with fallback so search engines don't receive error
+      headers: { 
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Cache-Control': 'no-cache'
+      }
     });
   }
 };
