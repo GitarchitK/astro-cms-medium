@@ -124,16 +124,7 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
         </div>
       </div>
 
-      <!-- Custom CSS Stylesheet Card -->
-      <div class="bg-white border border-[#c3c4c7] rounded shadow-sm overflow-hidden">
-        <div class="px-4 py-3 border-b border-[#c3c4c7] bg-slate-50 flex items-center justify-between">
-          <h3 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Custom CSS Stylesheet</h3>
-        </div>
-        <div class="p-4">
-          <textarea id="custom-css" rows="6" placeholder=".article-content h2 { color: #2271b1; }" class="w-full bg-white border border-slate-350 text-slate-800 text-xs font-mono rounded px-3 py-2.5 focus:outline-none focus:border-blue-500 placeholder-slate-400 transition-all resize-y"></textarea>
-          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">Inject CSS code specific to this post. Target styles inside <code class="bg-slate-100 px-1 py-0.5 border rounded">.article-content</code>.</p>
-        </div>
-      </div>
+
 
     </div>
 
@@ -700,7 +691,7 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       const slug = permalinkSlug.textContent?.trim() || '';
       const excerpt = (document.getElementById('excerpt') as HTMLTextAreaElement).value.trim();
       const content = viewMode === 'compose' ? editor.getHTML() : rawHtmlEditor.value;
-      const customCss = (document.getElementById('custom-css') as HTMLTextAreaElement).value.trim();
+      const customCss = '';
       
       const selectedCategoryRadio = document.querySelector('input[name="post-category"]:checked') as HTMLInputElement;
       const category = selectedCategoryRadio ? selectedCategoryRadio.value : 'AI Tools';

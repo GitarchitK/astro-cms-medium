@@ -387,7 +387,6 @@ const uniqueFaqs = finalFaqs.filter(faq => {
   <div id="reading-progress" class="fixed top-0 left-0 h-[4px] bg-gradient-to-r from-indigo-650 via-violet-500 to-pink-500 w-0 z-[9999] transition-[width] duration-75 ease-out shadow-sm"></div>
 
   <main class="bg-white dark:bg-slate-900 min-h-screen pb-16 font-sans transition-colors duration-300 animate-fade-in-up">
-    {article.customCss && <style is:inline set:html={article.customCss}></style>}
     
     <!-- Breadcrumb Header -->
     <div class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
@@ -414,7 +413,7 @@ const uniqueFaqs = finalFaqs.filter(faq => {
         <!-- Left: Main Article Content -->
         <div class={`relative ${article.isCustomHtml ? 'max-w-none' : 'max-w-[700px]'} mx-auto w-full min-w-0`}>
           
-          <article class="min-w-0 w-full px-1 md:px-0">
+          <article class="min-w-0 w-full px-1 md:px-0 article-container">
             {article.isCustomHtml ? (
               <>
                 <!-- Shadow DOM container for Custom HTML/CSS Content to encapsulate styles -->
@@ -822,6 +821,8 @@ const uniqueFaqs = finalFaqs.filter(faq => {
     font-family: 'Lora', Georgia, serif;
     font-size: 1.0625rem;
     line-height: 1.8;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
   @media (min-width: 768px) {
     .article-content {
@@ -900,7 +901,10 @@ const uniqueFaqs = finalFaqs.filter(faq => {
     line-height: 1.8;
   }
   .article-content table {
+    display: block;
     width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     border-collapse: collapse;
     margin: 2rem 0;
     font-size: 0.875rem;
@@ -909,6 +913,7 @@ const uniqueFaqs = finalFaqs.filter(faq => {
     border: 1px solid #e2e8f0;
     padding: 0.75rem;
     text-align: left;
+    min-width: 120px;
   }
   .dark .article-content th, .dark .article-content td {
     border-color: #334155;
@@ -927,6 +932,53 @@ const uniqueFaqs = finalFaqs.filter(faq => {
     font-weight: 700;
   }
   .dark .article-content a { color: #f8fafc; }
+
+  /* Responsive Images */
+  .article-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 2rem auto;
+    display: block;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Code blocks & Code snippets */
+  .article-content pre {
+    background-color: #f8fafc;
+    padding: 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875rem;
+    margin-bottom: 1.75rem;
+    line-height: 1.6;
+  }
+  .dark .article-content pre {
+    background-color: #0b0f19;
+    border-color: #1e293b;
+  }
+  .article-content code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.85em;
+    background-color: #f1f5f9;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    color: #0f172a;
+    font-weight: 600;
+  }
+  .dark .article-content code {
+    background-color: #1e293b;
+    color: #cbd5e1;
+  }
+  .article-content pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    color: inherit;
+    font-weight: inherit;
+  }
 
   #toc-nav a.active {
     color: #4f46e5 !important;
