@@ -13,7 +13,9 @@ const DEFAULT_SETTINGS = {
   postsPerPage: '10',
   seoTitle: 'Mershal — Human Stories & Expert Tech Blueprints',
   seoDescription: 'Discover deep-dive blueprints and hands-on reviews about AI Tools, Web Development, Productivity, SEO, Freelancing, and Remote Work written by digital builders.',
-  ga4PropertyId: ''
+  ga4PropertyId: '',
+  geminiApiKey: '',
+  openaiApiKey: ''
 };
 
 export const GET: APIRoute = async ({ cookies }) => {
@@ -34,7 +36,17 @@ export const GET: APIRoute = async ({ cookies }) => {
       });
     }
 
-    return new Response(JSON.stringify({ ...DEFAULT_SETTINGS, ...doc.data(), envEmail: clientEmail }), {
+    const data = doc.data() || {};
+    // Mask sensitive keys
+    const maskedSettings = {
+      ...DEFAULT_SETTINGS,
+      ...data,
+      geminiApiKey: data.geminiApiKey ? '••••••••••••' : '',
+      openaiApiKey: data.openaiApiKey ? '••••••••••••' : '',
+      envEmail: clientEmail
+    };
+
+    return new Response(JSON.stringify(maskedSettings), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -53,6 +65,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   try {
     const data = await request.json();
+    
+    // Fetch current settings to preserve keys if unchanged (masked)
+    const doc = await adminDb.collection('settings').doc('general').get();
+    const currentData = doc.exists ? doc.data() : {};
+
+    let geminiApiKey = data.geminiApiKey !== undefined ? data.geminiApiKey : '';
+    if (geminiApiKey === '••••••••••••') {
+      geminiApiKey = currentData?.geminiApiKey || '';
+    }
+
+    let openaiApiKey = data.openaiApiKey !== undefined ? data.openaiApiKey : '';
+    if (openaiApiKey === '••••••••••••') {
+      openaiApiKey = currentData?.openaiApiKey || '';
+    }
+
     const newSettings = {
       title: data.title || DEFAULT_SETTINGS.title,
       tagline: data.tagline || DEFAULT_SETTINGS.tagline,
@@ -62,12 +89,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       seoTitle: data.seoTitle || DEFAULT_SETTINGS.seoTitle,
       seoDescription: data.seoDescription || DEFAULT_SETTINGS.seoDescription,
       ga4PropertyId: data.ga4PropertyId || '',
+      geminiApiKey,
+      openaiApiKey,
       updatedAt: new Date().toISOString()
     };
 
     await adminDb.collection('settings').doc('general').set(newSettings, { merge: true });
 
-    return new Response(JSON.stringify({ success: true, settings: newSettings }), {
+    // Return response with masked keys
+    const maskedSettings = {
+      ...newSettings,
+      geminiApiKey: geminiApiKey ? '••••••••••••' : '',
+      openaiApiKey: openaiApiKey ? '••••••••••••' : ''
+    };
+
+    return new Response(JSON.stringify({ success: true, settings: maskedSettings }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });

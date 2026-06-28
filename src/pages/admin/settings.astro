@@ -94,6 +94,27 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       </div>
     </div>
 
+    <!-- Group 3.8: AI Configurations -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-bold text-slate-800 border-b pb-2">AI API Configurations</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">Gemini API Key</label>
+        <div class="md:col-span-3">
+          <input type="password" id="geminiApiKey" placeholder="Enter Gemini API Key" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 font-mono" />
+          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5 font-outfit">Google Gemini API Key for content generation. Falls back to GEMINI_API_KEY environment variable.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+        <label class="md:col-span-1 block font-bold text-slate-600 md:text-right">OpenAI API Key</label>
+        <div class="md:col-span-3">
+          <input type="password" id="openaiApiKey" placeholder="Enter OpenAI API Key" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-3 py-2 focus:outline-none focus:border-blue-500 font-mono" />
+          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5 font-outfit">OpenAI API Key for content generation. Falls back to OPENAI_API_KEY environment variable.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Group 4: Meta SEO Configuration -->
     <div class="space-y-4">
       <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Global Home SEO Meta</h3>
@@ -146,6 +167,8 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
           (document.getElementById('seoTitle') as HTMLInputElement).value = settings.seoTitle || '';
           (document.getElementById('seoDescription') as HTMLTextAreaElement).value = settings.seoDescription || '';
           (document.getElementById('ga4PropertyId') as HTMLInputElement).value = settings.ga4PropertyId || '';
+          (document.getElementById('geminiApiKey') as HTMLInputElement).value = settings.geminiApiKey || '';
+          (document.getElementById('openaiApiKey') as HTMLInputElement).value = settings.openaiApiKey || '';
 
           // Transition UI
           loader.classList.add('hidden');
@@ -176,7 +199,9 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
         postsPerPage: (document.getElementById('postsPerPage') as HTMLInputElement).value,
         seoTitle: (document.getElementById('seoTitle') as HTMLInputElement).value.trim(),
         seoDescription: (document.getElementById('seoDescription') as HTMLTextAreaElement).value.trim(),
-        ga4PropertyId: (document.getElementById('ga4PropertyId') as HTMLInputElement).value.trim()
+        ga4PropertyId: (document.getElementById('ga4PropertyId') as HTMLInputElement).value.trim(),
+        geminiApiKey: (document.getElementById('geminiApiKey') as HTMLInputElement).value.trim(),
+        openaiApiKey: (document.getElementById('openaiApiKey') as HTMLInputElement).value.trim()
       };
 
       try {

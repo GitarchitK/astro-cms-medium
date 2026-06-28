@@ -3,7 +3,7 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
-  activeNav?: 'dashboard' | 'posts' | 'new-post' | 'categories' | 'media' | 'settings' | 'analytics' | 'indexing' | 'import-export';
+  activeNav?: 'dashboard' | 'posts' | 'new-post' | 'categories' | 'media' | 'settings' | 'analytics' | 'indexing' | 'import-export' | 'auto-poster';
 }
 
 const { title, activeNav } = Astro.props;
@@ -11,7 +11,7 @@ const { title, activeNav } = Astro.props;
 // Determine if a submenu should be open by default
 const isPostsSection = ['posts', 'new-post', 'categories'].includes(activeNav || '');
 const isMediaSection = ['media'].includes(activeNav || '');
-const isToolsSection = ['indexing', 'import-export'].includes(activeNav || '');
+const isToolsSection = ['indexing', 'import-export', 'auto-poster'].includes(activeNav || '');
 const isSettingsSection = ['settings'].includes(activeNav || '');
 ---
 
@@ -141,6 +141,7 @@ const isSettingsSection = ['settings'].includes(activeNav || '');
           <svg class={`w-3.5 h-3.5 text-[#a7aaad] transition-transform duration-200 ${isToolsSection ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
         </button>
         <div class={`bg-[#151a1e] py-1 text-xs pl-9 space-y-1 ${isToolsSection ? 'block' : 'hidden'}`}>
+          <a href="/admin/tools/auto-poster" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'auto-poster' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>AI Auto-Poster</a>
           <a href="/admin/tools/indexing" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'indexing' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>Auto-Indexing</a>
           <a href="/admin/tools/import-export" class={`block py-2 hover:text-blue-400 transition-colors ${activeNav === 'import-export' ? 'text-blue-400 font-semibold' : 'text-[#a7aaad]'}`}>Import / Export</a>
         </div>
