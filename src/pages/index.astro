@@ -82,7 +82,12 @@ function formattedDate(dateVal: Date | string | null) {
   )}
   <Header />
 
-  <main class="min-h-screen bg-[#fcfcfc] dark:bg-slate-950 transition-colors duration-200 font-sans pb-16">
+  <main class="relative min-h-screen bg-[#fcfcfc] dark:bg-[#0b0f19] transition-colors duration-200 font-sans pb-16 overflow-hidden">
+    <!-- Premium background glowing gradients -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] pointer-events-none opacity-50 dark:opacity-30 z-0">
+      <div class="absolute -top-40 left-10 w-[450px] h-[450px] rounded-full bg-indigo-200/50 dark:bg-indigo-900/10 blur-[130px] animate-glow-pulse"></div>
+      <div class="absolute -top-40 right-10 w-[450px] h-[450px] rounded-full bg-violet-200/50 dark:bg-violet-900/10 blur-[130px] animate-glow-pulse" style="animation-delay: 3s;"></div>
+    </div>
     
     {hasArticles ? (
       <!-- ── ACTIVE CONTENT HUB LAYOUT ── -->
@@ -171,17 +176,17 @@ function formattedDate(dateVal: Date | string | null) {
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               {webDevArticles.map(art => (
-                <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-900 rounded-2xl p-5 shadow-sm space-y-3.5 flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div class="bg-white dark:bg-slate-900/50 backdrop-blur-sm border border-slate-100 dark:border-slate-850 rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] dark:shadow-none hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] hover:-translate-y-1 dark:hover:border-slate-700/60 transition-all duration-300 space-y-3.5 flex flex-col justify-between group">
                   <div class="space-y-2">
                     <a href={`/${art.categorySlug}/${art.slug}`} class="block aspect-[16/10] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950">
-                      <Image src={art.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} alt={art.title} width={360} height={225} class="w-full h-full object-cover" />
+                      <Image src={art.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} alt={art.title} width={360} height={225} class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" />
                     </a>
-                    <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug hover:text-indigo-650 dark:hover:text-indigo-455 transition-colors line-clamp-2">
+                    <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                       <a href={`/${art.categorySlug}/${art.slug}`}>{art.title}</a>
                     </h4>
                     <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{art.excerpt}</p>
                   </div>
-                  <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold font-sans pt-2 border-t border-slate-50 dark:border-slate-855">
+                  <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold font-sans pt-2 border-t border-slate-50 dark:border-slate-800">
                     <span>{formattedDate(art.publishDate)}</span>
                     <span>•</span>
                     <span>{art.readingTime} min read</span>
@@ -206,17 +211,17 @@ function formattedDate(dateVal: Date | string | null) {
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               {aiArticles.map(art => (
-                <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-900 rounded-2xl p-5 shadow-sm space-y-3.5 flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div class="bg-white dark:bg-slate-900/50 backdrop-blur-sm border border-slate-100 dark:border-slate-850 rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] dark:shadow-none hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] hover:-translate-y-1 dark:hover:border-slate-700/60 transition-all duration-300 space-y-3.5 flex flex-col justify-between group">
                   <div class="space-y-2">
                     <a href={`/${art.categorySlug}/${art.slug}`} class="block aspect-[16/10] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-955">
-                      <Image src={art.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} alt={art.title} width={360} height={225} class="w-full h-full object-cover" />
+                      <Image src={art.featuredImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'} alt={art.title} width={360} height={225} class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" />
                     </a>
-                    <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug hover:text-indigo-650 dark:hover:text-indigo-455 transition-colors line-clamp-2">
+                    <h4 class="font-serif font-black text-slate-900 dark:text-white text-base leading-snug group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                       <a href={`/${art.categorySlug}/${art.slug}`}>{art.title}</a>
                     </h4>
                     <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{art.excerpt}</p>
                   </div>
-                  <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold font-sans pt-2 border-t border-slate-50 dark:border-slate-855">
+                  <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold font-sans pt-2 border-t border-slate-50 dark:border-slate-800">
                     <span>{formattedDate(art.publishDate)}</span>
                     <span>•</span>
                     <span>{art.readingTime} min read</span>

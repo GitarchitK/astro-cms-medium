@@ -66,44 +66,44 @@ async function fetchGoogleSuggestions(keyword: string): Promise<string[]> {
 }
 
 async function fetchTopSearchContext(query: string): Promise<string> {
-  try {
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36'
-      }
-    });
-    if (!res.ok) return '';
-    const html = await res.text();
-    
-    // Parse DuckDuckGo search results
-    const matches = html.matchAll(/<a class="result__url"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g);
-    const results: string[] = [];
-    let count = 0;
-    
-    for (const match of matches) {
-      if (count >= 5) break;
-      const urlText = match[1].replace(/<[^>]*>/g, '').trim();
-      const snippet = match[2].replace(/<[^>]*>/g, '').trim();
-      results.push(`Top Article ${count + 1}:\nSource: ${urlText}\nSnippet Summary: ${snippet}`);
-      count++;
-    }
-    
-    if (results.length === 0) {
-      // Fallback regex matching result__snippet
-      const snippets = html.matchAll(/<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g);
-      for (const match of snippets) {
-        if (count >= 5) break;
-        results.push(`Snippet Reference ${count + 1}: ${match[1].replace(/<[^>]*>/g, '').trim()}`);
+  const queries = [
+    query,
+    `${query} guide tutorial`,
+    `${query} troubleshooting issues`
+  ];
+  
+  const results: string[] = [];
+  const seenUrls = new Set<string>();
+  let count = 0;
+  
+  for (const q of queries) {
+    try {
+      const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36'
+        }
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      
+      const matches = html.matchAll(/<a class="result__url"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g);
+      for (const match of matches) {
+        if (count >= 10) break;
+        const urlText = match[1].replace(/<[^>]*>/g, '').trim();
+        if (seenUrls.has(urlText)) continue;
+        seenUrls.add(urlText);
+        
+        const snippet = match[2].replace(/<[^>]*>/g, '').trim();
+        results.push(`Top Post Reference ${count + 1}:\nSource URL: ${urlText}\nSnippet/Key Details: ${snippet}`);
         count++;
       }
+    } catch (e) {
+      console.error(`Failed to fetch snippets for search sub-query: ${q}`, e);
     }
-    
-    return results.join('\n\n');
-  } catch (e) {
-    console.error('Failed to fetch search context:', e);
-    return '';
   }
+  
+  return results.join('\n\n');
 }
 
 async function callLLM(
@@ -239,7 +239,7 @@ Target Keyword: "${parsedIntent.selectedKeyword}"
 
 ${searchContext ? `Here are snippets from top ranking articles on this topic for research and reference:\n${searchContext}\n\nAnalyze these top posts to build an outline that is even more complete, comprehensive, and helpful.` : ''}
 
-The outline must define 4 to 6 logical H2/H3 sections. The sections must flow logically, providing real details, actionable steps, and code examples if appropriate.
+DYNAMIC ARTICLE STRUCTURE: The outline must define a logical set of H2/H3 sections. The number of sections must be determined dynamically based on the complexity of the topic and research context (minimum 3 sections, maximum 10 sections). Do NOT use a standard outline or a fixed number of sections. Every article must have a unique outline structure and a different number of sections that matches what is actually needed to solve the specific problem.
 
 Return a JSON object only. Do NOT add markdown code fences. Structure:
 {
@@ -274,26 +274,28 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
       const section = outline.sections[i];
       await updateLogs(`Drafting section ${i + 1}/${outline.sections.length}: "${section.heading}"...`);
       
-      const writePrompt = `You are an expert technical writer and subject matter expert. Write a highly detailed, comprehensive section for the article: "${outline.title}".
+      const writePrompt = `You are a highly experienced human engineer and tech journalist. Write a detailed, section-by-section guide for the article: "${outline.title}".
 Section Heading: "${section.heading}"
 Section Guidelines: "${section.guidelines}"
 
 ${searchContext ? `Here are snippets from top ranking articles on this topic for factual research and context:\n${searchContext}\n\nUse this real-world context and facts to ensure the content is highly researched, accurate, and professional.` : ''}
 
-Requirements for a professional, well-researched, and AdSense-friendly article:
-1. DEEP RESEARCH & DETAIL: Provide thorough explanations of concepts, configurations, and best practices. Avoid generic summaries or high-level generalizations.
-2. ACTIONABLE EXAMPLES: Provide complete, clean, and commented code blocks inside <pre><code>...</code></pre> tags if applicable. Use modern conventions.
-3. PREMIUM LAYOUTS & CSS CLASSES: To match the dedicated Custom CSS generated for this article, you must format the HTML content to use custom styling classes:
+Strict instructions to ensure this article is 100% human-like, engaging, and bypasses AI content detectors (like GPTZero, Copyleaks, Winston AI):
+1. ANECDOTAL FIRST-PERSON PERSPECTIVE: Write from a first-person perspective (using "I", "we", "in my testing", "when I was building X"). Share it like an expert engineer's personal journal or troubleshooting log. For example: "I ran into this issue when configuring a production database..." or "In my experiments with Y, I found that...".
+2. VARY SENTENCE LENGTHS (BURSTINESS): Intentionally vary your sentence length. Use short, punchy sentences (e.g., "It works.", "No luck.", "Let's fix that.") alongside longer, detailed explanations. This is the main signal of human writing.
+3. ELIMINATE AI BUZZWORDS: Do NOT use these words/phrases under any circumstances: "delve", "testament", "tapestry", "in conclusion", "furthermore", "moreover", "ultimately", "demystify", "not only... but also", "look no further", "essential guide", "journey", "revolutionize". If you need to transition, write naturally (e.g. "Next up,", "This is where X comes in,", "But there is a catch.").
+4. COGNITIVE DEVIATIONS & COLLOQUIALISMS: Include brief parenthetical thoughts, conversational side notes, or small jokes (e.g., "to be honest,", "spoiler alert: it didn't work,", "your mileage may vary"). Use developer jargon naturally (e.g., "spaghetti code", "boilerplate", "out of the box", "gotcha", "hacky workaround").
+5. PREMIUM LAYOUTS & CSS CLASSES: To match the dedicated Custom CSS generated for this article, you must format the HTML content to use custom styling classes:
    - For opening thoughts, summaries, or introductory paragraphs in a section: use a lead paragraph like \`<p class="lead-paragraph">...</p>\` or insert a drop cap \`<span class="drop-cap">T</span>he rest of the text...\`.
    - For tips, warnings, suggestions, or highlights: wrap them in a callout container, e.g., \`<div class="custom-callout info"><strong>Pro Tip:</strong> ...</div>\`, \`<div class="custom-callout warning"><strong>Caution:</strong> ...</div>\`, or \`<div class="custom-callout success"><strong>Important Note:</strong> ...</div>\`.
    - For badge-like inline elements, use \`<span class="badge">text</span>\`.
    - For highlighted text segments, use \`<span class="highlight">highlighted text</span>\`.
    - For structured, modern tables, include proper headers and striped rows.
    - For lists, use custom lists \`<ul class="custom-list">\` or standard bullets styled with \`custom-li\` classes where appropriate.
-4. ON-PAGE SEO: Naturally weave in keywords and relevant sub-terms. Use formatting like bullet points, bold key terms, blockquotes, and tables where appropriate to improve readability.
-5. ARTICLE INTERLINKING: Naturally weave in exact phrases for major categories/topics (e.g., "Web Development", "AI Tools", "Productivity", "SEO", "Freelancing", "Remote Work", "Startup Stories") in body sentences to enable contextual interlinking.
-6. FORMATTING: Use HTML tags ONLY: <p>, <strong>, <em>, <ul>, <ol>, <li>, <blockquote>, <pre><code>, <h3>, <div>, <span>, <table>, <thead>, <tbody>, <tr>, <th>, <td> etc. Do NOT include markdown code fences (\`\`\`html) or outer wrapper tags (<html>/<body>).
-7. LENGTH: Write 400 to 600 words for this section alone. Maintain an expert, authoritative, and helpful human tone.`;
+6. ON-PAGE SEO: Naturally weave in keywords and relevant sub-terms. Use formatting like bullet points, bold key terms, blockquotes, and tables where appropriate to improve readability.
+7. ARTICLE INTERLINKING: Naturally weave in exact phrases for major categories/topics (e.g., "Web Development", "AI Tools", "Productivity", "SEO", "Freelancing", "Remote Work", "Startup Stories") in body sentences to enable contextual interlinking.
+8. FORMATTING: Use HTML tags ONLY: <p>, <strong>, <em>, <ul>, <ol>, <li>, <blockquote>, <pre><code>, <h3>, <div>, <span>, <table>, <thead>, <tbody>, <tr>, <th>, <td> etc. Do NOT include markdown code fences (\`\`\`html) or outer wrapper tags (<html>/<body>).
+9. LENGTH: Write 400 to 600 words for this section alone. Maintain an expert, authoritative, and helpful human tone.`;
 
       const sectionHtml = await callLLM(provider, apiKeys, writePrompt, false);
       const cleanedSectionHtml = sectionHtml.replace(/^```html\s*/i, '').replace(/```$/, '').trim();

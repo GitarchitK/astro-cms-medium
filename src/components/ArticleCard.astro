@@ -37,22 +37,22 @@ function formattedDate(dateVal: Date | string | null) {
 const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 ---
 
-<article class="py-6 md:py-8 border-b border-slate-100 dark:border-slate-900 first:pt-0 last:border-b-0 transition-colors duration-200">
-  <div class="flex gap-6 md:gap-8 items-start justify-between">
+<article class="bg-white dark:bg-slate-900/50 backdrop-blur-sm border border-slate-100 dark:border-slate-850 p-5 md:p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] dark:shadow-none hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] hover:-translate-y-1 dark:hover:border-slate-700/60 transition-all duration-300 mb-6 group">
+  <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-start justify-between">
     
     <!-- Left Column: Content metadata, title and description -->
-    <div class="flex-1 min-w-0 space-y-2.5">
+    <div class="flex-1 min-w-0 order-2 md:order-1 space-y-3">
       <!-- Author Row -->
       <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-sans">
         <a 
           href={`/author/${author.toLowerCase().replace(/\s+/g, '-')}`}
-          class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200/40 uppercase select-none"
+          class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-250/30 uppercase select-none"
         >
           {initials}
         </a>
         <a 
           href={`/author/${author.toLowerCase().replace(/\s+/g, '-')}`} 
-          class="font-bold text-slate-800 dark:text-slate-205 hover:text-slate-600 dark:hover:text-white transition-colors"
+          class="font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors"
         >
           {author}
         </a>
@@ -61,7 +61,7 @@ const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCa
       </div>
 
       <!-- Title Link -->
-      <h3 class="font-serif font-black text-slate-900 dark:text-white leading-snug tracking-tight text-lg md:text-xl lg:text-[22px] hover:text-slate-650 dark:hover:text-indigo-400 transition-colors duration-150">
+      <h3 class="font-serif font-black text-slate-900 dark:text-white leading-snug tracking-tight text-lg md:text-xl lg:text-[22px] group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors duration-150">
         <a href={`/${categorySlug}/${slug}`}>
           {title}
         </a>
@@ -73,11 +73,11 @@ const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCa
       </p>
 
       <!-- Footer Actions & Meta -->
-      <div class="flex items-center justify-between pt-2.5 text-[11px] text-slate-400 dark:text-slate-550 font-semibold font-sans">
+      <div class="flex items-center justify-between pt-2 text-[11px] text-slate-400 dark:text-slate-550 font-semibold font-sans">
         <div class="flex items-center gap-2.5">
           <a 
             href={`/category/${categorySlug}`} 
-            class="px-2.5 py-0.5 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-full font-bold hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors uppercase tracking-wider text-[9px] border border-slate-100 dark:border-slate-850"
+            class="px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 rounded-full font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors uppercase tracking-wider text-[9px] border border-indigo-100/40 dark:border-indigo-900/20"
           >
             {category}
           </a>
@@ -89,18 +89,17 @@ const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCa
 
     <!-- Right Column: Square Aspect Image Preview (Hidden if no imageUrl) -->
     {imageUrl && (
-      <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-lg overflow-hidden shrink-0 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-850/60 shadow-sm">
+      <div class="w-full md:w-32 md:h-32 aspect-[16/9] md:aspect-square rounded-xl overflow-hidden shrink-0 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850/60 shadow-sm order-1 md:order-2">
         <a href={`/${categorySlug}/${slug}`} class="block w-full h-full">
           <Image
             src={imageUrl}
             alt={title}
-            width={128}
-            height={128}
-            class="w-full h-full object-cover hover:opacity-90 transition-opacity duration-300"
+            width={160}
+            height={160}
+            class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
           />
         </a>
       </div>
     )}
-
   </div>
 </article>
