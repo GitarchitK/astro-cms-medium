@@ -11,14 +11,35 @@ let categories: any[] = [];
 let hasGemini = false;
 let hasOpenAI = false;
 
+// 10 Default Categories (matching those in api/admin/categories.ts)
+const defaults = [
+  { id: 'ai-tools', name: 'AI Tools', slug: 'ai-tools' },
+  { id: 'technology-guides', name: 'Technology Guides', slug: 'technology-guides' },
+  { id: 'freelancing', name: 'Freelancing', slug: 'freelancing' },
+  { id: 'remote-work', name: 'Remote Work', slug: 'remote-work' },
+  { id: 'side-hustles', name: 'Side Hustles', slug: 'side-hustles' },
+  { id: 'software-reviews', name: 'Software Reviews', slug: 'software-reviews' },
+  { id: 'seo-blogging', name: 'SEO & Blogging', slug: 'seo-blogging' },
+  { id: 'web-development', name: 'Web Development', slug: 'web-development' },
+  { id: 'startup-stories', name: 'Startup Stories', slug: 'startup-stories' },
+  { id: 'productivity', name: 'Productivity', slug: 'productivity' }
+];
+
 if (adminDb) {
   try {
-    const categoriesSnapshot = await adminDb.collection('categories').orderBy('name').get();
-    categories = categoriesSnapshot.docs.map(doc => ({
+    // Fetch custom categories
+    const categoriesSnapshot = await adminDb.collection('categories').get();
+    let custom = categoriesSnapshot.docs.map(doc => ({
       id: doc.id,
       name: doc.data().name || doc.id,
       slug: doc.data().slug || ''
     }));
+
+    // Filter out custom categories that duplicate default ones by slug or name
+    custom = custom.filter(c => !defaults.some(d => d.slug === c.slug || d.name.toLowerCase() === c.name.toLowerCase()));
+
+    // Merge default and custom categories, sorting them alphabetically
+    categories = [...defaults, ...custom].sort((a, b) => a.name.localeCompare(b.name));
 
     // Fetch API Configuration status for badges
     const settingsDoc = await adminDb.collection('settings').doc('general').get();

@@ -247,7 +247,7 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
   "excerpt": "A high-interest 2-sentence intro summary (under 160 chars)",
   "slug": "SEO-optimized URL slug (e.g. 'how-to-fix-xyz')",
   "tags": ["tag1", "tag2", "tag3"],
-  "customCss": "A custom CSS stylesheet string containing valid rules targeting .article-content child elements (like blockquote, pre, h2, h3, or custom helper classes like .callout) to make this specific article look distinct, modern, and beautiful. Do NOT wrap in style tags. Example: '.article-content blockquote { border-left-color: #9333ea; font-style: italic; } .article-content h2 { border-bottom: 2px solid #e9d5ff; padding-bottom: 0.25rem; }'",
+  "customCss": "A custom CSS stylesheet string containing valid, highly polished, and modern CSS rules targeting .article-content child elements to make this specific article look premium, distinct, and visually stunning. Do NOT wrap in style tags. Create a cohesive color palette for this article using CSS variables defined in \`.article-content\` (e.g., --theme-primary, --theme-secondary, --theme-accent) depending on the topic (e.g. vibrant purples/blues for tech, deep emeralds for finance, warm terracotta/oranges for lifestyle/productivity). Use these variables to style custom classes and base elements. Style the following custom classes: \`.lead-paragraph\` (for the intro with larger typography, elegant line height, or drop-caps using \`.drop-cap\`), \`.custom-callout\` (with borders, border-radius, background gradients, padding, shadows, and left borders color-coded for callout types: \`.warning\`, \`.info\`, \`.success\`), \`.highlight\` (for marker highlight spans), \`.badge\` (for inline pills/tags), \`.custom-list\` and \`.custom-li\` (for custom list bullet icons/counters). Also override standard elements to match the theme: style h2 (adding gradient underlines, left borders, or decorative tags), h3, blockquotes (with left border gradients, elegant spacing, italics, and soft box shadow), pre/code blocks (for vibrant modern dark syntax themes, adding a custom header or border), and table styles (clean layout, themed header borders, row striping). Ensure all styles support dark mode by prefixing selectors with \`.dark\` (e.g., \`.dark .article-content .custom-callout\`).",
   "sections": [
     {
       "heading": "Heading title (e.g., 'What Causes this Error?')",
@@ -283,10 +283,17 @@ ${searchContext ? `Here are snippets from top ranking articles on this topic for
 Requirements for a professional, well-researched, and AdSense-friendly article:
 1. DEEP RESEARCH & DETAIL: Provide thorough explanations of concepts, configurations, and best practices. Avoid generic summaries or high-level generalizations.
 2. ACTIONABLE EXAMPLES: Provide complete, clean, and commented code blocks inside <pre><code>...</code></pre> tags if applicable. Use modern conventions.
-3. ON-PAGE SEO: Naturally weave in keywords and relevant sub-terms. Use formatting like bullet points, bold key terms, blockquotes, and tables where appropriate to improve readability.
-4. ARTICLE INTERLINKING: Naturally weave in exact phrases for major categories/topics (e.g., "Web Development", "AI Tools", "Productivity", "SEO", "Freelancing", "Remote Work", "Startup Stories") in body sentences to enable contextual interlinking.
-5. FORMATTING: Use HTML tags ONLY: <p>, <strong>, <em>, <ul>, <ol>, <li>, <blockquote>, <pre><code>, <h3>, etc. Do NOT include markdown code fences (\`\`\`html) or outer wrapper tags (<html>/<body>).
-6. LENGTH: Write 400 to 600 words for this section alone. Maintain an expert, authoritative, and helpful human tone.`;
+3. PREMIUM LAYOUTS & CSS CLASSES: To match the dedicated Custom CSS generated for this article, you must format the HTML content to use custom styling classes:
+   - For opening thoughts, summaries, or introductory paragraphs in a section: use a lead paragraph like \`<p class="lead-paragraph">...</p>\` or insert a drop cap \`<span class="drop-cap">T</span>he rest of the text...\`.
+   - For tips, warnings, suggestions, or highlights: wrap them in a callout container, e.g., \`<div class="custom-callout info"><strong>Pro Tip:</strong> ...</div>\`, \`<div class="custom-callout warning"><strong>Caution:</strong> ...</div>\`, or \`<div class="custom-callout success"><strong>Important Note:</strong> ...</div>\`.
+   - For badge-like inline elements, use \`<span class="badge">text</span>\`.
+   - For highlighted text segments, use \`<span class="highlight">highlighted text</span>\`.
+   - For structured, modern tables, include proper headers and striped rows.
+   - For lists, use custom lists \`<ul class="custom-list">\` or standard bullets styled with \`custom-li\` classes where appropriate.
+4. ON-PAGE SEO: Naturally weave in keywords and relevant sub-terms. Use formatting like bullet points, bold key terms, blockquotes, and tables where appropriate to improve readability.
+5. ARTICLE INTERLINKING: Naturally weave in exact phrases for major categories/topics (e.g., "Web Development", "AI Tools", "Productivity", "SEO", "Freelancing", "Remote Work", "Startup Stories") in body sentences to enable contextual interlinking.
+6. FORMATTING: Use HTML tags ONLY: <p>, <strong>, <em>, <ul>, <ol>, <li>, <blockquote>, <pre><code>, <h3>, <div>, <span>, <table>, <thead>, <tbody>, <tr>, <th>, <td> etc. Do NOT include markdown code fences (\`\`\`html) or outer wrapper tags (<html>/<body>).
+7. LENGTH: Write 400 to 600 words for this section alone. Maintain an expert, authoritative, and helpful human tone.`;
 
       const sectionHtml = await callLLM(provider, apiKeys, writePrompt, false);
       const cleanedSectionHtml = sectionHtml.replace(/^```html\s*/i, '').replace(/```$/, '').trim();

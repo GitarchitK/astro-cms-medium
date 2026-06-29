@@ -268,6 +268,20 @@ if (!postId) return Astro.redirect('/admin/posts');
         </div>
       </div>
 
+      <!-- Custom CSS Card -->
+      <div class="bg-white border border-[#c3c4c7] rounded shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+          <h3 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Custom CSS Stylesheet</h3>
+        </div>
+        <div class="p-4 space-y-3.5 font-outfit">
+          <div>
+            <label class="block text-slate-500 font-medium mb-1">Custom CSS</label>
+            <textarea id="custom-css" rows="6" placeholder="e.g. .article-content h2 { border-bottom-color: #7c3aed; }" class="w-full bg-white border border-[#8c8f94] text-slate-800 rounded px-2.5 py-1.5 focus:outline-none placeholder-slate-400 font-mono text-[11px]"></textarea>
+            <p class="text-[9px] text-slate-400 mt-1">This CSS ruleset targets child elements of `.article-content`. Do not wrap in style tags.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Author -->
       <div class="bg-white border border-[#c3c4c7] rounded shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
@@ -598,6 +612,7 @@ if (!postId) return Astro.redirect('/admin/posts');
       (document.getElementById('tags') as HTMLInputElement).value = (p.tags || []).join(', ');
       (document.getElementById('seo-title') as HTMLInputElement).value = p.meta_title || '';
       (document.getElementById('seo-desc') as HTMLTextAreaElement).value = p.meta_description || '';
+      (document.getElementById('custom-css') as HTMLTextAreaElement).value = p.customCss || '';
       (document.getElementById('author') as HTMLInputElement).value = p.author || 'Editorial Team';
 
       if (p.publishDate) {
@@ -813,7 +828,7 @@ if (!postId) return Astro.redirect('/admin/posts');
       const slug = permalinkSlug.textContent?.trim() || '';
       const excerpt = (document.getElementById('excerpt') as HTMLTextAreaElement).value.trim();
       const content = viewMode === 'compose' ? editor.getHTML() : rawHtmlEditor.value;
-      const customCss = '';
+      const customCss = (document.getElementById('custom-css') as HTMLTextAreaElement).value.trim();
       
       const selectedCategoryRadio = document.querySelector('input[name="post-category"]:checked') as HTMLInputElement;
       const category = selectedCategoryRadio ? selectedCategoryRadio.value : 'AI Tools';
