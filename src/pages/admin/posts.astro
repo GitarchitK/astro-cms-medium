@@ -110,6 +110,21 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
     let categories: any[] = [];
     let currentStatusFilter = 'all'; // all, published, scheduled, draft
     let isDeleting = false;
+    let siteUrl = 'https://mershal.in';
+    const isIndexing: Record<string, boolean> = {};
+
+    // Load Settings to obtain the configured domain URL
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/admin/settings');
+        if (res.ok) {
+          const settings = await res.json();
+          siteUrl = (settings.siteUrl || 'https://mershal.in').replace(/\/$/, '');
+        }
+      } catch (err) {
+        console.error('Failed to load settings site URL:', err);
+      }
+    }
 
     // Load Categories from API for Filter dropdown
     async function loadCategories() {
@@ -282,9 +297,15 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
               <input type="checkbox" name="post-select" value="${p.id}" class="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer" />
             </td>
             <td class="px-4 py-4 min-w-[200px]">
-              <div class="flex items-center flex-wrap">
+              <div class="flex items-center flex-wrap gap-2">
                 <a href="/admin/posts/edit?id=${p.id}" class="font-bold text-[#2271b1] hover:text-[#135e96] text-sm break-all line-clamp-1">${p.title}</a>
                 ${statusBadge}
+                ${p.status === 'published' ? `
+                  <button id="idx-btn-${p.id}" onclick="window.indexPost('${p.id}', '${catSlug}', '${p.slug}')" class="px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer inline-flex items-center gap-0.5 select-none" title="Request instant Google search indexing for this published post">
+                    <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2"/></svg>
+                    Index
+                  </button>
+                ` : ''}
               </div>
               
               <!-- Hover Action Links (WordPress style) -->
@@ -567,7 +588,46 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       }
     };
 
+    // Global index post helper
+    (window as any).indexPost = async function(id: string, catSlug: string, slug: string) {
+      if (isIndexing[id]) return;
+
+      const btn = document.getElementById(`idx-btn-${id}`) as HTMLButtonElement;
+      if (!btn) return;
+      
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="w-2.5 h-2.5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+      isIndexing[id] = true;
+
+      const fullUrl = `${siteUrl}/${catSlug}/${slug}`;
+
+      try {
+        const res = await fetch('/api/admin/indexing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: fullUrl, action: 'publish' })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showGlobalAlert(`Successfully requested Google Search indexing for "${fullUrl}".`, 'success');
+        } else {
+          throw new Error(data.error || 'API response failed');
+        }
+      } catch (err: any) {
+        console.error('Manual URL indexing failed from table:', err);
+        showGlobalAlert(`Failed to index "${fullUrl}": ${err.message || 'API error'}. Verify credential/owner permissions in Tools > Google Auto-Indexing.`, 'error');
+      } finally {
+        isIndexing[id] = false;
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    };
+
     // Load initial data
-    loadCategories().then(loadPosts);
+    loadSettings().then(() => {
+      loadCategories().then(loadPosts);
+    });
   </script>
 </AdminLayout>
