@@ -10,14 +10,41 @@ interface Props {
   linkedin?: string;
 }
 
-const {
-  name,
-  role = 'Expert Reviewer',
-  bio = 'Experienced technology analyst and SaaS strategist covering online business growth and tool scaling guides.',
-  avatar = '',
-  twitter = '#',
-  linkedin = '#',
-} = Astro.props;
+const authorMetadata: Record<string, { role: string; bio: string; twitter?: string; linkedin?: string }> = {
+  'Mahi': {
+    role: 'Senior SEO Strategist & Content Lead',
+    bio: 'Mahi is an expert in search engine visibility, keyword research, and on-page optimization. She reviews editorial layouts to align topics with user queries.',
+    twitter: '#',
+    linkedin: '#'
+  },
+  'Archit': {
+    role: 'Lead Fullstack Architect & Founder',
+    bio: 'Archit is a software engineer specializing in modern web frameworks, cloud deployments, and serverless pipelines. He drafts web guides and blueprints.',
+    twitter: '#',
+    linkedin: '#'
+  },
+  'Tiyasha': {
+    role: 'Digital Productivity & UX Analyst',
+    bio: 'Tiyasha is a workflow analyst focusing on remote productivity tools, SaaS automations, and workplace pipelines. She tests products to isolate scaling bottlenecks.',
+    twitter: '#',
+    linkedin: '#'
+  },
+  'Alisa': {
+    role: 'SaaS Product Analyst',
+    bio: 'Alisa tracks software-as-a-service platforms, creator monetization tools, and cloud integrations. She writes hands-on reviews and benchmark comparisons.',
+    twitter: '#',
+    linkedin: '#'
+  }
+};
+
+const { name } = Astro.props;
+const authorMeta = authorMetadata[name] || {};
+
+const role = Astro.props.role || authorMeta.role || 'Expert Reviewer';
+const bio = Astro.props.bio || authorMeta.bio || 'Experienced technology analyst and SaaS strategist covering online business growth and tool scaling guides.';
+const avatar = Astro.props.avatar || '';
+const twitter = Astro.props.twitter || authorMeta.twitter || '#';
+const linkedin = Astro.props.linkedin || authorMeta.linkedin || '#';
 
 // Initials fallback
 const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();

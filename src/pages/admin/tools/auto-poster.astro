@@ -132,6 +132,17 @@ if (adminDb) {
                 <option value="draft">Save as Draft (Review in Admin list)</option>
               </select>
             </div>
+
+            <!-- Publishing Editor Selector -->
+            <div>
+              <label for="author" class="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">Publishing Editor</label>
+              <select id="author" class="w-full bg-white border border-slate-300 text-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-blue-500 font-medium cursor-pointer">
+                <option value="Archit">Archit (Lead Fullstack Architect)</option>
+                <option value="Mahi">Mahi (Senior SEO Strategist)</option>
+                <option value="Tiyasha">Tiyasha (Digital Productivity Lead)</option>
+                <option value="Alisa">Alisa (SaaS Product Analyst)</option>
+              </select>
+            </div>
           </div>
 
           <div class="pt-2 flex justify-start">
@@ -234,6 +245,7 @@ if (adminDb) {
     const categorySelect = document.getElementById('category') as HTMLSelectElement;
     const providerSelect = document.getElementById('provider') as HTMLSelectElement;
     const statusSelect = document.getElementById('status') as HTMLSelectElement;
+    const authorSelect = document.getElementById('author') as HTMLSelectElement;
     const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
     
     const consoleCard = document.getElementById('live-console-card')!;
@@ -259,6 +271,7 @@ if (adminDb) {
       categorySelect.disabled = disabled;
       providerSelect.disabled = disabled;
       statusSelect.disabled = disabled;
+      authorSelect.disabled = disabled;
       submitBtn.disabled = disabled;
       if (disabled) {
         submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -404,6 +417,7 @@ if (adminDb) {
         category: categorySelect.value,
         provider: providerVal,
         model: modelVal,
+        author: authorSelect.value,
         status: statusSelect.value
       };
 

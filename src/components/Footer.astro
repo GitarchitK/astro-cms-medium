@@ -6,73 +6,121 @@ const categories = [
   { name: 'SEO & Blogging', href: '/category/seo-blogging' },
   { name: 'Web Development', href: '/category/web-development' },
   { name: 'Productivity', href: '/category/productivity' },
+  { name: 'Freelancing', href: '/category/freelancing' },
+  { name: 'Remote Work', href: '/category/remote-work' }
+];
+
+const companyLinks = [
+  { name: 'About Us', href: '/about' },
+  { name: 'Contact Editorial', href: '/contact' },
+  { name: 'Sitemap Index', href: '/sitemap' },
+  { name: 'RSS News Feed', href: '/rss.xml' }
+];
+
+const legalLinks = [
+  { name: 'Privacy Policy', href: '/privacy' },
+  { name: 'Terms of Service', href: '/terms' },
+  { name: 'Ad Disclosure', href: '/disclaimer' },
+  { name: 'Content Policy', href: '/privacy#policy' }
 ];
 ---
 
-<footer class="bg-white dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/50 pt-16 pb-8 transition-colors duration-300">
+<footer class="bg-[#fafafa] dark:bg-slate-950 border-t border-slate-200/60 dark:border-slate-900 pt-16 pb-8 transition-colors duration-300">
   <div class="container mx-auto px-4 max-w-7xl">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+    <!-- Top Footer Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
       
-      <!-- Column 1: Info -->
-      <div class="space-y-4">
-        <a href="/" class="flex items-center gap-2 group">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-sm shadow-[0_4px_10px_rgba(79,70,229,0.25)]">M</div>
-          <span class="text-lg font-black tracking-wider text-slate-800 dark:text-white font-outfit">Mershal</span>
+      <!-- Brand & Mission Column (Takes 2 Columns on Desktop) -->
+      <div class="lg:col-span-2 space-y-5">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-1.5 group select-none">
+          <svg class="w-5.5 h-5.5 text-red-650" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+          <span class="font-outfit font-black tracking-tight text-lg transition-colors flex items-center">
+            <span class="text-slate-850 dark:text-white uppercase">Mershal.</span>
+            <span class="font-black flex items-center lowercase">
+              <span style="color: #FF9933;">i</span>
+              <span style="color: #138808;">n</span>
+            </span>
+          </span>
         </a>
-        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-          Expert reviews, step-by-step guides, and workflows on AI Tools, Software development, Blogging SEO, and digital productivity stacks.
+        
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium max-w-sm font-outfit">
+          Mershal.in is an independent, expert-led publishing console delivering hands-on software reviews, digital product blueprints, and step-by-step technical guides for creators, builders, and remote developers.
         </p>
+
+        <!-- Social Media Icon Block -->
+        <div class="flex items-center gap-3.5 pt-2">
+          <a href="#" class="text-slate-405 hover:text-blue-600 transition-colors" aria-label="Facebook" target="_blank">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1V12h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/></svg>
+          </a>
+          <a href="#" class="text-slate-405 hover:text-slate-900 dark:hover:text-white transition-colors" aria-label="Twitter" target="_blank">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          <a href="#" class="text-slate-405 hover:text-blue-700 transition-colors" aria-label="LinkedIn" target="_blank">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+          </a>
+        </div>
+
+        <!-- Trust Badges -->
+        <div class="pt-4 flex flex-wrap gap-2 select-none font-outfit">
+          <span class="px-2 py-1 rounded bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> AdSense Approved
+          </span>
+          <span class="px-2 py-1 rounded bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> SSL Encrypted
+          </span>
+        </div>
       </div>
 
-      <!-- Column 2: Categories -->
+      <!-- Categories Column -->
       <div>
-        <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-800 dark:text-slate-200 mb-4 font-outfit">Categories</h3>
-        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+        <h3 class="text-[10px] uppercase font-black tracking-widest text-slate-900 dark:text-slate-200 mb-4 font-outfit">Resource Hubs</h3>
+        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold font-outfit">
           {categories.map(cat => (
             <li>
-              <a href={cat.href} class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{cat.name}</a>
+              <a href={cat.href} class="hover:text-red-650 dark:hover:text-red-500 transition-colors flex items-center gap-1">
+                <span>{cat.name}</span>
+              </a>
             </li>
           ))}
         </ul>
       </div>
 
-      <!-- Column 3: Platform -->
+      <!-- Editorial Column -->
       <div>
-        <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-800 dark:text-slate-200 mb-4 font-outfit">Platform</h3>
-        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold">
-          <li>
-            <a href="/about" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">About Us</a>
-          </li>
-          <li>
-            <a href="/contact" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact Us</a>
-          </li>
-          <li>
-            <a href="/sitemap" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Sitemap</a>
-          </li>
+        <h3 class="text-[10px] uppercase font-black tracking-widest text-slate-900 dark:text-slate-200 mb-4 font-outfit">Publication</h3>
+        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold font-outfit">
+          {companyLinks.map(link => (
+            <li>
+              <a href={link.href} class="hover:text-red-650 dark:hover:text-red-500 transition-colors">{link.name}</a>
+            </li>
+          ))}
         </ul>
       </div>
 
-      <!-- Column 4: Legal & Guidelines -->
+      <!-- Compliance Column -->
       <div>
-        <h3 class="text-xs uppercase font-extrabold tracking-widest text-slate-800 dark:text-slate-200 mb-4 font-outfit">Legal</h3>
-        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold">
-          <li>
-            <a href="/privacy" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy Policy</a>
-          </li>
-          <li>
-            <a href="/terms" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms & Conditions</a>
-          </li>
-          <li>
-            <a href="/disclaimer" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Disclaimer</a>
-          </li>
+        <h3 class="text-[10px] uppercase font-black tracking-widest text-slate-900 dark:text-slate-200 mb-4 font-outfit">Compliance</h3>
+        <ul class="space-y-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold font-outfit">
+          {legalLinks.map(link => (
+            <li>
+              <a href={link.href} class="hover:text-red-650 dark:hover:text-red-500 transition-colors">{link.name}</a>
+            </li>
+          ))}
         </ul>
       </div>
 
     </div>
 
-    <!-- Divider -->
-    <div class="border-t border-slate-200/50 dark:border-slate-800/50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 dark:text-slate-550 text-[10px] uppercase font-extrabold tracking-widest font-outfit">
-      <p>&copy; {new Date().getFullYear()} Mershal. All rights reserved.</p>
+    <!-- Bottom Bar / Copyright -->
+    <div class="border-t border-slate-200/50 dark:border-slate-900 pt-8 mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-black tracking-widest font-outfit">
+      <p>&copy; {new Date().getFullYear()} Mershal.in. All rights reserved.</p>
+      <div class="flex items-center gap-1">
+        <span>Proudly Engineered with</span>
+        <a href="https://astro.build" target="_blank" class="hover:text-slate-600 dark:hover:text-white transition-colors underline">Astro</a>
+      </div>
     </div>
   </div>
 </footer>

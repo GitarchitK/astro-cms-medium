@@ -15,12 +15,12 @@ const categories = [
 ];
 
 const navLinks = [
-  { name: 'Home', href: '/', icon: '🏠' },
-  { name: 'Reviews', href: '/category/software-reviews', icon: '📊' },
-  { name: 'Best Software', href: '/category/ai-tools', icon: '🏆' },
-  { name: 'Comparisons', href: '/category/startup-stories', icon: '💻' },
-  { name: 'Guides & Tutorials', href: '/category/technology-guides', icon: '📝' },
-  { name: 'News & Trends', href: '/category/seo-blogging', icon: '🎵' }
+  { name: 'Home', href: '/' },
+  { name: 'Reviews', href: '/category/software-reviews' },
+  { name: 'Best Software', href: '/category/ai-tools' },
+  { name: 'Comparisons', href: '/category/startup-stories' },
+  { name: 'Guides & Tutorials', href: '/category/technology-guides' },
+  { name: 'News & Trends', href: '/category/seo-blogging' }
 ];
 
 const { pathname } = Astro.url;
@@ -97,9 +97,12 @@ if (adminDb) {
       <svg class="w-6 h-6 text-red-650" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
       </svg>
-      <a href="/" class="font-outfit font-black tracking-tight text-xl uppercase transition-colors flex items-center select-none">
-        <span class="text-slate-850 dark:text-white">Mershal</span>
-        <span class="text-red-650 ml-1 font-extrabold">INFO</span>
+      <a href="/" class="font-outfit font-black tracking-tight text-xl transition-colors flex items-center select-none">
+        <span class="text-slate-850 dark:text-white uppercase">Mershal.</span>
+        <span class="font-black flex items-center lowercase">
+          <span style="color: #FF9933;">i</span>
+          <span style="color: #138808;">n</span>
+        </span>
       </a>
     </div>
 
@@ -110,9 +113,9 @@ if (adminDb) {
         return (
           <a
             href={link.href}
-            class={`flex items-center gap-1.5 transition-colors duration-150 ${active ? 'text-red-650 font-extrabold' : 'text-slate-700 dark:text-slate-350 hover:text-slate-900 dark:hover:text-white'}`}
+            class={`flex items-center gap-1 transition-colors duration-150 ${active ? 'text-red-650 font-extrabold' : 'text-slate-700 dark:text-slate-350 hover:text-slate-900 dark:hover:text-white'}`}
           >
-            {active && <span class="text-[10px]">•</span>} {link.icon} {link.name}
+            {active && <span class="text-[10px]">•</span>} {link.name}
           </a>
         );
       })}
@@ -192,7 +195,7 @@ if (adminDb) {
             href={link.href}
             class={`block px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition ${active ? 'text-red-650 bg-slate-50 dark:bg-slate-900' : 'text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900'}`}
           >
-            {link.icon} {link.name}
+            {link.name}
           </a>
         );
       })}

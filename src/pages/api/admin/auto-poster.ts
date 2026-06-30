@@ -168,18 +168,25 @@ async function callLLM(
     
     const openaiModel = model || 'gpt-4o-mini';
     const url = 'https://api.openai.com/v1/chat/completions';
+    const isReasoning = openaiModel.startsWith('o1') || openaiModel.startsWith('o3');
+    
+    const requestBody: any = {
+      model: openaiModel,
+      messages: [{ role: 'user', content: prompt }],
+      response_format: jsonMode ? { type: "json_object" } : undefined
+    };
+    
+    if (!isReasoning) {
+      requestBody.temperature = 0.7;
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${key}`
       },
-      body: JSON.stringify({
-        model: openaiModel,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        response_format: jsonMode ? { type: "json_object" } : undefined
-      })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) {
@@ -202,7 +209,8 @@ async function runPipeline(
   selectedCategory: string,
   publishStatus: 'draft' | 'published',
   apiKeys: { gemini?: string; openai?: string },
-  model?: string
+  model?: string,
+  author?: string
 ) {
   if (!adminDb) return;
   
@@ -261,6 +269,7 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
     const outlinePrompt = `You are an expert technical editor and SEO strategist. Generate a comprehensive outline for an authoritative, in-depth, and AdSense-friendly article.
 Topic: "${parsedIntent.topic}"
 Target Keyword: "${parsedIntent.selectedKeyword}"
+Publishing Editor: "${author || 'AI Editor'}" (Frame the outline architecture, narrative arc, and guidelines to match this author's area of expertise: Archit writes developer/code guides; Mahi writes SEO/marketing growth guides; Tiyasha writes workflows/productivity automation; Alisa writes SaaS reviews/comparisons).
 
 ${searchContext ? `Here are snippets from top ranking articles on this topic for research and reference:\n${searchContext}\n\nAnalyze these top posts to build an outline that is even more complete, comprehensive, and helpful.` : ''}
 
@@ -313,7 +322,18 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
         ? `Next Section Heading: "${outline.sections[i + 1].heading}"`
         : 'This is the final section of the article.';
 
-      const writePrompt = `You are an award-winning technology journalist, senior software engineer, university researcher, technical editor, UX writer, and long-form feature writer. Your work is comparable in quality to publications such as Ars Technica, Stripe Docs, Vercel Blog, GitHub Engineering, Cloudflare Blog, and Linear.
+      let authorPersona = 'You are an award-winning technology journalist, senior software engineer, and technical editor.';
+      if (author === 'Archit') {
+        authorPersona = 'You are Archit, a senior software engineer, Lead Fullstack Architect, and founder of Mershal. Write in an authoritative, highly technical, and engineering-focused voice. Use precise technical terminology, provide clear code snippets or terminal commands where relevant, and focus on system architecture, code execution, and performance optimization. Speak from the perspective of a builder who has set up and debugged these configurations first-hand.';
+      } else if (author === 'Mahi') {
+        authorPersona = 'You are Mahi, a Senior SEO Strategist and Content Lead at Mershal. Write in an insightful, marketing-focused, and strategic voice. Focus on organic growth, search visibility, user acquisition, click-through rates (CTR), content architectures, and search engine optimization. Speak from the perspective of a growth marketer who designs campaigns and optimizes on-page layouts for real-world visibility.';
+      } else if (author === 'Tiyasha') {
+        authorPersona = 'You are Tiyasha, a Digital Productivity and UX Analyst at Mershal. Write in a clear, workflow-centric, and analytical voice. Focus on workplace efficiency, SaaS automation workflows, remote work tooling integrations, user experience, and productivity hacks. Speak from the perspective of an operations specialist who reviews pipelines and eliminates friction from daily work routines.';
+      } else if (author === 'Alisa') {
+        authorPersona = 'You are Alisa, a SaaS Product Analyst at Mershal. Write in a critical, feature-focused, and comparative voice. Focus on software value propositions, pricing tiers, key integrations, feature usability scoring, and direct alternatives comparison. Speak from the perspective of an analyst who tests SaaS platforms rigorously and writes honest, detailed, and data-backed feature reviews.';
+      }
+
+      const writePrompt = `${authorPersona}
 
 Write a highly detailed, authoritative, and engaging section of a comprehensive article.
 
@@ -336,9 +356,10 @@ ${nextSectionHeading}
 
 ${searchContext ? `Here are snippets from top ranking articles on this topic for factual research and context:\n${searchContext}\n\nUse this real-world context and facts to ensure the content is highly researched, accurate, and professional.` : ''}
 
-Strict instructions to ensure this article reads like a premium, professionally edited, and publication-ready piece:
-1. PREMIUM EDITORIAL VOICE: Write in an authoritative, clear, and engaging professional voice. Only use first-person experiences ("I", "we", "in my experiments") when they genuinely improve credibility and fit a real scenario (e.g., debugging a specific error or testing a feature). Do not force first-person pronouns into every sentence.
-2. EDITORIAL STANDARDS: Every sentence must earn its place. Do NOT explain obvious, basic definitions (e.g., do not explain what a database is or what an error means unless it's the core focus of the topic). Never repeat ideas, phrases, or keywords across or within paragraphs. Every paragraph must introduce a new, valuable insight. Avoid textbook writing and SEO keyword stuffing.
+Strict instructions to ensure this article is premium, professional, and accessible to everyone:
+1. ACCESSIBILITY & SIMPLICITY: Use simple words and clear, concise sentences. Avoid overly complex technical jargon, pretentious vocabulary, or convoluted grammar. Explain concepts clearly using simple analogies or relatable, real-world examples so that everyone can understand and relate to the article. Never use complex words when a simple one works better (e.g., use "use" instead of "utilize", "begin" instead of "commence", "show" instead of "demonstrate").
+2. PREMIUM EDITORIAL VOICE: Write in an authoritative, clear, friendly, and engaging professional voice. Only use first-person experiences ("I", "we", "in my experiments") when they improve credibility and fit a real scenario.
+3. EDITORIAL STANDARDS: Every sentence must earn its place. Focus on user problems. Do NOT explain obvious, basic definitions (e.g., do not explain what a database is unless it's the core focus of the topic). Never repeat ideas, phrases, or keywords.
 3. READABILITY RHYTHM & PARAGRAPHS: Average paragraph length should be 40 to 90 words. Never exceed 120 words for a paragraph unless absolutely necessary. Alternate between short punchy paragraphs, medium paragraphs, and longer explanatory paragraphs to create a natural human reading flow.
 4. NARRATIVE STORYTELLING: Whenever possible, start the section or sub-points with a brief real-world observation, a common developer misconception, a concrete problem, a surprising statistic, or a short scenario, rather than a generic textbook explanation.
 5. VISUAL LAYOUT & DESIGN SYSTEM: Think like a designer. Every 300 to 500 words, include exactly one visual element or styled box where it naturally improves understanding. Do NOT over-use them. Use the following CSS/HTML design system classes:
@@ -387,7 +408,7 @@ Strict instructions to ensure this article reads like a premium, professionally 
       category: selectedCategory,
       tags: outline.tags || [],
       featured_image: featuredImage,
-      author: 'AI Editor',
+      author: author || 'AI Editor',
       status: publishStatus,
       meta_title: outline.title,
       meta_description: outline.excerpt || '',
@@ -517,7 +538,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   try {
-    const { keyword, category, status, provider, model } = await request.json();
+    const { keyword, category, status, provider, model, author } = await request.json();
 
     if (!keyword || !keyword.trim()) {
       return new Response(JSON.stringify({ error: 'Keyword is required' }), { status: 400 });
@@ -526,6 +547,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const providerVal = provider || 'gemini';
     const categoryVal = category || 'AI Tools';
     const statusVal = status === 'published' ? 'published' : 'draft';
+    const authorVal = author || 'AI Editor';
 
     // Retrieve settings for API Keys
     const settingsDoc = await adminDb.collection('settings').doc('general').get();
@@ -562,7 +584,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       categoryVal,
       statusVal,
       { gemini: geminiApiKey, openai: openaiApiKey },
-      model
+      model,
+      authorVal
     );
 
     return new Response(JSON.stringify({ success: true, runId: runRef.id }), {
