@@ -105,8 +105,11 @@ if (adminDb) {
             <div>
               <label for="provider" class="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">AI Writing Engine</label>
               <select id="provider" class="w-full bg-white border border-slate-300 text-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-blue-500 font-medium cursor-pointer">
-                <option value="gemini">Google Gemini (Gemini 2.5 Flash)</option>
-                <option value="openai">OpenAI (GPT-4o Mini)</option>
+                <option value="gemini:gemini-2.5-flash">Google Gemini 2.5 Flash (Fast & Cost-Efficient)</option>
+                <option value="gemini:gemini-2.5-pro">Google Gemini 2.5 Pro (Highly Creative & In-Depth)</option>
+                <option value="openai:gpt-4o-mini">OpenAI GPT-4o Mini (Fast & Standard)</option>
+                <option value="openai:gpt-4o">OpenAI GPT-4o (Premium Editorial Quality)</option>
+                <option value="openai:o3-mini">OpenAI o3-mini (Smart Logical/Reasoning)</option>
               </select>
             </div>
 
@@ -297,9 +300,16 @@ if (adminDb) {
               minute: '2-digit'
             });
 
-            const engineBadge = run.provider === 'openai'
-              ? '<span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[9px] font-bold font-mono">GPT-4o Mini</span>'
-              : '<span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold font-mono">Gemini 2.5</span>';
+             let modelLabel = run.model || (run.provider === 'openai' ? 'GPT-4o Mini' : 'Gemini 2.5');
+             // Format model label for readability
+             if (modelLabel === 'gpt-4o-mini') modelLabel = 'GPT-4o Mini';
+             if (modelLabel === 'gpt-4o') modelLabel = 'GPT-4o';
+             if (modelLabel === 'o3-mini') modelLabel = 'o3-mini';
+             if (modelLabel === 'gemini-2.5-flash') modelLabel = 'Gemini 2.5 Flash';
+             if (modelLabel === 'gemini-2.5-pro') modelLabel = 'Gemini 2.5 Pro';
+
+             const isOp = run.provider === 'openai';
+             const engineBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono ${isOp ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}">${escapeHtml(modelLabel)}</span>`;
 
             let statusBadge = '';
             if (run.status === 'success') {
@@ -388,10 +398,12 @@ if (adminDb) {
       e.preventDefault();
       banner.classList.add('hidden');
       
+      const [providerVal, modelVal] = providerSelect.value.split(':');
       const payload = {
         keyword: keywordInput.value.trim(),
         category: categorySelect.value,
-        provider: providerSelect.value,
+        provider: providerVal,
+        model: modelVal,
         status: statusSelect.value
       };
 

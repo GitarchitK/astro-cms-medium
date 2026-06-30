@@ -1,6 +1,15 @@
 import type { APIRoute } from 'astro';
 import { adminDb } from '../../../lib/firebase-admin';
 import { submitToGoogleIndexing } from '../../../lib/google-api';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || import.meta.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY || import.meta.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET || import.meta.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
 
 function isAuthenticated(cookies: any) {
   return cookies.get('admin_session')?.value === 'authenticated';
@@ -122,13 +131,15 @@ async function callLLM(
   provider: 'gemini' | 'openai',
   apiKeys: { gemini?: string; openai?: string },
   prompt: string,
-  jsonMode: boolean = false
+  jsonMode: boolean = false,
+  model?: string
 ): Promise<string> {
   if (provider === 'gemini') {
     const key = apiKeys.gemini;
     if (!key) throw new Error('Gemini API key is not configured.');
     
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const geminiModel = model || 'gemini-2.5-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${key}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -155,6 +166,7 @@ async function callLLM(
     const key = apiKeys.openai;
     if (!key) throw new Error('OpenAI API key is not configured.');
     
+    const openaiModel = model || 'gpt-4o-mini';
     const url = 'https://api.openai.com/v1/chat/completions';
     const response = await fetch(url, {
       method: 'POST',
@@ -163,7 +175,7 @@ async function callLLM(
         'Authorization': `Bearer ${key}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: openaiModel,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         response_format: jsonMode ? { type: "json_object" } : undefined
@@ -189,7 +201,8 @@ async function runPipeline(
   provider: 'gemini' | 'openai',
   selectedCategory: string,
   publishStatus: 'draft' | 'published',
-  apiKeys: { gemini?: string; openai?: string }
+  apiKeys: { gemini?: string; openai?: string },
+  model?: string
 ) {
   if (!adminDb) return;
   
@@ -229,7 +242,7 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
   "unsplashQuery": "A 1-2 word query for Unsplash to find a relevant graphic/tech cover photo"
 }`;
 
-    const intentResponse = await callLLM(provider, apiKeys, intentPrompt, true);
+    const intentResponse = await callLLM(provider, apiKeys, intentPrompt, true, model);
     const parsedIntent = JSON.parse(cleanJsonString(intentResponse));
     await updateLogs(`Selected Topic: "${parsedIntent.topic}"`);
     await updateLogs(`Unsplash query keyword: "${parsedIntent.unsplashQuery}"`);
@@ -277,7 +290,7 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
   ]
 }`;
 
-    const outlineResponse = await callLLM(provider, apiKeys, outlinePrompt, true);
+    const outlineResponse = await callLLM(provider, apiKeys, outlinePrompt, true, model);
     const outline = JSON.parse(cleanJsonString(outlineResponse));
     await updateLogs(`Outline and custom stylesheet created successfully. Meta tags generated.`);
 
@@ -346,7 +359,7 @@ Strict instructions to ensure this article reads like a premium, professionally 
 9. LENGTH: Write approximately ${targetSectionWords} words for this section (aim for a strict range of ${targetSectionWords - 30} to ${targetSectionWords + 30} words). Maintain an expert, authoritative, and helpful human tone.
 10. NO DUPLICATE HEADINGS: Do NOT output the section heading ("${section.heading}") inside your response. Start writing directly with the section's content (paragraphs, divs, lists, etc.). The heading will be rendered automatically by the system.`;
 
-      const sectionHtml = await callLLM(provider, apiKeys, writePrompt, false);
+      const sectionHtml = await callLLM(provider, apiKeys, writePrompt, false, model);
       const cleanedSectionHtml = cleanSectionOutput(sectionHtml, section.heading);
       generatedSections.push(`<h2>${section.heading}</h2>\n${cleanedSectionHtml}`);
       
@@ -374,8 +387,39 @@ Strict instructions to ensure this article reads like a premium, professionally 
           const unsplashData = await unsplashRes.json();
           if (unsplashData.results && unsplashData.results.length > 0) {
             const randomIndex = Math.floor(Math.random() * Math.min(5, unsplashData.results.length));
-            featuredImage = unsplashData.results[randomIndex].urls.regular;
-            await updateLogs(`Selected high-resolution Unsplash photo.`);
+            const unsplashImgUrl = unsplashData.results[randomIndex].urls.regular;
+            await updateLogs(`Selected Unsplash photo: ${unsplashImgUrl}. Uploading to Cloudinary...`);
+            
+            try {
+              const imgRes = await fetch(unsplashImgUrl);
+              if (imgRes.ok) {
+                const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+                
+                const uploadRes = await new Promise<any>((resolve, reject) => {
+                  const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                      folder: 'articles',
+                      use_filename: true,
+                      unique_filename: true,
+                    },
+                    (error, result) => {
+                      if (error) reject(error);
+                      else resolve(result);
+                    }
+                  );
+                  uploadStream.end(imgBuffer);
+                });
+                
+                featuredImage = uploadRes.secure_url;
+                await updateLogs(`Successfully uploaded cover photo to Cloudinary: ${featuredImage}`);
+              } else {
+                featuredImage = unsplashImgUrl;
+                await updateLogs(`Unsplash image fetch failed (status: ${imgRes.status}), fallback to direct hotlink.`);
+              }
+            } catch (err: any) {
+              featuredImage = unsplashImgUrl;
+              await updateLogs(`Cloudinary upload failed: ${err.message || err}, fallback to direct Unsplash hotlink.`);
+            }
           }
         }
       } catch (e) {
@@ -497,6 +541,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         id: doc.id,
         keyword: d.keyword || '',
         provider: d.provider || 'gemini',
+        model: d.model || '',
         status: d.status || 'running',
         timestamp: d.timestamp || '',
         articleTitle: d.articleTitle || '',
@@ -525,7 +570,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   try {
-    const { keyword, category, status, provider } = await request.json();
+    const { keyword, category, status, provider, model } = await request.json();
 
     if (!keyword || !keyword.trim()) {
       return new Response(JSON.stringify({ error: 'Keyword is required' }), { status: 400 });
@@ -553,6 +598,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const runDoc = {
       keyword: keyword.trim(),
       provider: providerVal,
+      model: model || '',
       category: categoryVal,
       status: 'running',
       logs: [`[${new Date().toLocaleTimeString()}] Spawning background workers...`],
@@ -568,7 +614,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       providerVal,
       categoryVal,
       statusVal,
-      { gemini: geminiApiKey, openai: openaiApiKey }
+      { gemini: geminiApiKey, openai: openaiApiKey },
+      model
     );
 
     return new Response(JSON.stringify({ success: true, runId: runRef.id }), {
