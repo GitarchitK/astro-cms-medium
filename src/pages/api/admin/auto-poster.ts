@@ -373,62 +373,9 @@ Strict instructions to ensure this article reads like a premium, professionally 
     const readingTime = Math.ceil(finalWordCount / 200);
     await updateLogs(`Drafting complete! Total article size: ${finalWordCount} words.`);
 
-    // Step 5: Unsplash Cover Image lookup
-    await updateLogs(`Querying Unsplash API for cover image keyword: "${parsedIntent.unsplashQuery}"...`);
-    let featuredImage = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop';
-    const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY || import.meta.env.UNSPLASH_ACCESS_KEY;
-    
-    if (unsplashAccessKey) {
-      try {
-        const queryTerm = parsedIntent.unsplashQuery || keyword;
-        const unsplashUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(queryTerm)}&client_id=${unsplashAccessKey}&per_page=5`;
-        const unsplashRes = await fetch(unsplashUrl);
-        if (unsplashRes.ok) {
-          const unsplashData = await unsplashRes.json();
-          if (unsplashData.results && unsplashData.results.length > 0) {
-            const randomIndex = Math.floor(Math.random() * Math.min(5, unsplashData.results.length));
-            const unsplashImgUrl = unsplashData.results[randomIndex].urls.regular;
-            await updateLogs(`Selected Unsplash photo: ${unsplashImgUrl}. Uploading to Cloudinary...`);
-            
-            try {
-              const imgRes = await fetch(unsplashImgUrl);
-              if (imgRes.ok) {
-                const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-                
-                const uploadRes = await new Promise<any>((resolve, reject) => {
-                  const uploadStream = cloudinary.uploader.upload_stream(
-                    {
-                      folder: 'articles',
-                      use_filename: true,
-                      unique_filename: true,
-                    },
-                    (error, result) => {
-                      if (error) reject(error);
-                      else resolve(result);
-                    }
-                  );
-                  uploadStream.end(imgBuffer);
-                });
-                
-                featuredImage = uploadRes.secure_url;
-                await updateLogs(`Successfully uploaded cover photo to Cloudinary: ${featuredImage}`);
-              } else {
-                featuredImage = unsplashImgUrl;
-                await updateLogs(`Unsplash image fetch failed (status: ${imgRes.status}), fallback to direct hotlink.`);
-              }
-            } catch (err: any) {
-              featuredImage = unsplashImgUrl;
-              await updateLogs(`Cloudinary upload failed: ${err.message || err}, fallback to direct Unsplash hotlink.`);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Failed to query Unsplash:', e);
-        await updateLogs('Unsplash search failed, using default tech banner.');
-      }
-    } else {
-      await updateLogs('Unsplash API key not set, using default tech banner.');
-    }
+    // Step 5: Manual Cover Image Setup
+    await updateLogs(`Skipping cover image lookup. Thumbnail will be uploaded manually by Editor.`);
+    let featuredImage = '';
 
     // Step 6: Save Article to Firestore
     await updateLogs(`Saving article to database...`);
