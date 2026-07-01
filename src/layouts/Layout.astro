@@ -8,6 +8,7 @@ interface Props {
   type?: 'website' | 'article';
   author?: string;
   publishedAt?: string;
+  robots?: string;
 }
 
 const { 
@@ -16,7 +17,8 @@ const {
   image = '/default-banner.svg', 
   type = 'website',
   author,
-  publishedAt
+  publishedAt,
+  robots = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
 } = Astro.props;
 
 const siteUrl = 'https://mershal.in';
@@ -50,6 +52,7 @@ const ogImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
   
   <!-- SEO & Crawling -->
   <meta name="description" content={description} />
+  <meta name="robots" content={robots} />
   <link rel="canonical" href={canonicalURL} />
   
   <!-- Open Graph / Facebook -->
@@ -74,9 +77,20 @@ const ogImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="sitemap" href="/sitemap.xml" />
   
-  <!-- Google Fonts Outfit & Inter -->
+  <!-- Resource Hints & Preconnect for Key Domains -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  
+  <!-- Cloudinary Asset Domain -->
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+  <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+  
+  <!-- Google Analytics / Tag Manager -->
+  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+  
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
 
   <!-- AdSense verification tag support placeholder -->

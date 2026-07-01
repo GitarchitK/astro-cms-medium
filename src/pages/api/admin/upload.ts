@@ -1,13 +1,24 @@
 import type { APIRoute } from 'astro';
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || import.meta.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY || import.meta.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET || import.meta.env.CLOUDINARY_API_SECRET,
-  secure: true
-});
+// Helper to lazily initialize Cloudinary at request-time
+function initCloudinary() {
+  const cloud_name = process.env.CLOUDINARY_CLOUD_NAME || import.meta.env.CLOUDINARY_CLOUD_NAME;
+  const api_key = process.env.CLOUDINARY_API_KEY || import.meta.env.CLOUDINARY_API_KEY;
+  const api_secret = process.env.CLOUDINARY_API_SECRET || import.meta.env.CLOUDINARY_API_SECRET;
+
+  if (!cloud_name || !api_key || !api_secret) {
+    throw new Error(`Missing Cloudinary configuration. cloud_name: ${!!cloud_name}, api_key: ${!!api_key}, api_secret: ${!!api_secret}`);
+  }
+
+  cloudinary.config({
+    cloud_name,
+    api_key,
+    api_secret,
+    secure: true
+  });
+}
+
 
 function isAuthenticated(cookies: any) {
   return cookies.get('admin_session')?.value === 'authenticated';
@@ -19,6 +30,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   try {
+    initCloudinary();
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const folder = formData.get('folder') as string || 'articles';
