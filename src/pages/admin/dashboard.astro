@@ -320,8 +320,21 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
         if (loader) loader.classList.add('hidden');
 
         if (res.ok && data.report) {
-          if (data.configRequired) {
-            if (warningMsg) warningMsg.classList.remove('hidden');
+          if (data.error) {
+            if (warningMsg) {
+              warningMsg.innerHTML = `<strong>Google Analytics Error</strong>: ${data.error}.<br/>Please make sure the Google Analytics Data API is enabled in your Google Cloud Console.`;
+              warningMsg.className = 'mb-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-800 text-[10px] leading-relaxed rounded-r shadow-sm';
+              warningMsg.classList.remove('hidden');
+            }
+            if (badgeContainer) {
+              badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-750 border border-red-200 text-[10px] font-bold uppercase tracking-wider">GA4 Error</span>';
+            }
+          } else if (data.configRequired) {
+            if (warningMsg) {
+              warningMsg.innerHTML = '<strong>Google Analytics not connected</strong>. Displaying sample data. Set your GA4 Property ID in <a href="/admin/settings" class="underline font-bold text-blue-600">Settings</a> and verify access to link your account.';
+              warningMsg.className = 'mb-3 p-3 bg-amber-50 border-l-4 border-amber-400 text-amber-700 text-[10px] leading-relaxed rounded-r shadow-sm';
+              warningMsg.classList.remove('hidden');
+            }
             if (badgeContainer) {
               badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-250 text-[10px] font-bold uppercase tracking-wider">Demo Mode</span>';
             }
@@ -332,7 +345,7 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
             }
           }
 
-          renderSvgChart(data.report);
+          renderSvgChart(data.report.daily || data.report);
         } else {
           throw new Error(data.error || 'Failed to load analytics report');
         }

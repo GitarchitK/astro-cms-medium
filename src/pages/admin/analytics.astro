@@ -34,11 +34,17 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
   </div>
 
   <!-- Stats Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
     <div class="bg-white border border-[#c3c4c7] rounded-md p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <p class="text-[10px] text-slate-450 font-bold uppercase tracking-wider font-outfit mb-1">Total Page Views (30 Days)</p>
       <h3 class="text-3xl font-black text-slate-800 font-outfit tracking-tight" id="stat-total-views">—</h3>
-      <p class="text-[10px] text-slate-400 mt-1 font-outfit font-medium">Cumulative page impressions</p>
+      <p class="text-[10px] text-slate-400 mt-1 font-outfit font-medium">Cumulative impressions</p>
+    </div>
+
+    <div class="bg-white border border-[#c3c4c7] rounded-md p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <p class="text-[10px] text-slate-450 font-bold uppercase tracking-wider font-outfit mb-1">Total Unique Users</p>
+      <h3 class="text-3xl font-black text-slate-800 font-outfit tracking-tight" id="stat-total-users">—</h3>
+      <p class="text-[10px] text-slate-400 mt-1 font-outfit font-medium">Unique active visitors</p>
     </div>
     
     <div class="bg-white border border-[#c3c4c7] rounded-md p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -58,10 +64,17 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
   <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6 overflow-hidden">
     <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
       <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Detailed Traffic History</h2>
-      <button id="refresh-chart-btn" class="inline-flex items-center gap-1 text-[#2271b1] hover:text-[#135e96] text-[11px] font-bold font-outfit transition-all cursor-pointer">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2"/></svg>
-        Refresh Data
-      </button>
+      <div class="flex items-center gap-4">
+        <!-- Legend -->
+        <div class="hidden sm:flex items-center gap-3 text-[10px] font-bold font-outfit">
+          <span class="inline-flex items-center gap-1 text-blue-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Page Views</span>
+          <span class="inline-flex items-center gap-1 text-purple-650"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Unique Users</span>
+        </div>
+        <button id="refresh-chart-btn" class="inline-flex items-center gap-1 text-[#2271b1] hover:text-[#135e96] text-[11px] font-bold font-outfit transition-all cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2"/></svg>
+          Refresh Data
+        </button>
+      </div>
     </div>
     
     <div class="p-6 relative select-none">
@@ -70,16 +83,72 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
         <svg class="w-4 h-4 animate-spin text-blue-650" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         <span>Connecting to Google Analytics...</span>
       </div>
-
+ 
       <!-- Graph Wrapper -->
       <div class="w-full h-64 md:h-80 relative" id="chart-wrapper">
         <svg id="analytics-svg-chart" viewBox="0 0 800 320" class="w-full h-full text-slate-450 font-mono text-[9px] font-bold">
           <!-- Injected SVG elements -->
         </svg>
         <!-- Interactive HTML Tooltip -->
-        <div id="chart-tooltip" class="absolute hidden bg-slate-900/95 text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg pointer-events-none font-outfit border border-slate-700/50 z-20 transition-all duration-75">
-          <div class="font-bold text-slate-350" id="tooltip-date"></div>
-          <div class="text-blue-400 font-extrabold mt-0.5" id="tooltip-views"></div>
+        <div id="chart-tooltip" class="absolute hidden bg-slate-900/95 text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg pointer-events-none font-outfit border border-slate-700/50 z-20 transition-all duration-75 min-w-[130px] space-y-1">
+          <div class="font-bold text-slate-350 border-b border-slate-700/50 pb-1" id="tooltip-date"></div>
+          <div id="tooltip-metrics" class="space-y-0.5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Analytics Grid Widgets -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Top Pages Table -->
+    <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+        <h2 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit">Top Content & Pages</h2>
+      </div>
+      <div class="p-5 overflow-x-auto">
+        <table class="w-full text-left font-outfit border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 text-slate-450 uppercase font-black tracking-wider text-[9px]">
+              <th class="py-2.5 pl-2 w-12">Rank</th>
+              <th class="py-2.5">Page Path & Title</th>
+              <th class="py-2.5 text-right pr-2 w-24">Page Views</th>
+            </tr>
+          </thead>
+          <tbody id="top-pages-list" class="divide-y divide-slate-100 text-slate-700">
+            <tr>
+              <td colspan="3" class="py-4 text-center text-slate-400 font-medium">Fetching top content...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Traffic Channels & Visitor Locations -->
+    <div class="space-y-6">
+      <!-- Traffic Sources -->
+      <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5">
+        <h3 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit mb-4">Traffic Acquisition Channels</h3>
+        <div id="sources-list" class="space-y-3.5">
+          <p class="text-center text-slate-400 text-xs font-medium py-2">Fetching traffic sources...</p>
+        </div>
+      </div>
+
+      <!-- Countries & Devices Breakdown Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Visitor Locations -->
+        <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5">
+          <h3 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit mb-4">Top Countries</h3>
+          <div id="countries-list" class="space-y-3.5">
+            <p class="text-center text-slate-400 text-xs font-medium py-2">Fetching location metrics...</p>
+          </div>
+        </div>
+
+        <!-- Devices -->
+        <div class="bg-white border border-[#c3c4c7] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5">
+          <h3 class="text-xs font-bold text-slate-650 uppercase tracking-widest font-outfit mb-4">Device Split</h3>
+          <div id="devices-list" class="space-y-3.5">
+            <p class="text-center text-slate-400 text-xs font-medium py-2">Fetching device profiles...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -162,8 +231,27 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
         if (loader) loader.classList.add('hidden');
 
         if (res.ok && data.report) {
-          if (data.configRequired) {
-            if (warningMsg) warningMsg.classList.remove('hidden');
+          if (data.error) {
+            if (warningMsg) {
+              const h4 = warningMsg.querySelector('h4');
+              const p = warningMsg.querySelector('p');
+              if (h4) h4.textContent = 'Google Analytics Connection Error';
+              if (p) p.innerHTML = `An error occurred while fetching your live data: <strong class="text-red-700 font-extrabold">${data.error}</strong>.<br/><br/>Please confirm that:<br/>1. The <strong>Google Analytics Data API</strong> is enabled in the Google Cloud Console.<br/>2. Your Firebase service account email is added as a <strong>Viewer</strong> in your Google Analytics Property Access settings.`;
+              warningMsg.className = 'mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 text-xs rounded-r shadow-sm';
+              warningMsg.classList.remove('hidden');
+            }
+            if (badgeContainer) {
+              badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-750 border border-red-200 text-[10px] font-bold uppercase tracking-wider">GA4 Error</span>';
+            }
+          } else if (data.configRequired) {
+            if (warningMsg) {
+              const h4 = warningMsg.querySelector('h4');
+              const p = warningMsg.querySelector('p');
+              if (h4) h4.textContent = 'Google Analytics is in Demo Mode';
+              if (p) p.innerHTML = 'You are currently viewing mock traffic data because no GA4 Property ID is configured or the service account does not have permission. To connect your live analytics, enter your GA4 Property ID in <a href="/admin/settings" class="underline text-blue-600 font-bold hover:text-blue-800">Settings</a> and ensure your credentials are added as a Viewer in Google Analytics.';
+              warningMsg.className = 'mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 text-amber-800 text-xs rounded-r shadow-sm';
+              warningMsg.classList.remove('hidden');
+            }
             if (badgeContainer) {
               badgeContainer.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-250 text-[10px] font-bold uppercase tracking-wider">Demo Mode</span>';
             }
@@ -174,15 +262,20 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
             }
           }
 
+          const dailyReport = data.report.daily || [];
+
           // Compute Statistics
-          const viewsList = data.report.map((r: any) => r.views);
+          const viewsList = dailyReport.map((r: any) => r.views);
+          const usersList = dailyReport.map((r: any) => r.users || 0);
+          
           const totalViews = viewsList.reduce((a: number, b: number) => a + b, 0);
+          const totalUsers = usersList.reduce((a: number, b: number) => a + b, 0);
           const avgViews = Math.round(totalViews / (viewsList.length || 1));
           
           let peakViews = 0;
           let peakDateStr = 'No peak day recorded';
           
-          data.report.forEach((r: any) => {
+          dailyReport.forEach((r: any) => {
             if (r.views > peakViews) {
               peakViews = r.views;
               let d = r.date;
@@ -199,12 +292,19 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
 
           // Write stats
           document.getElementById('stat-total-views')!.textContent = totalViews.toLocaleString();
+          document.getElementById('stat-total-users')!.textContent = totalUsers.toLocaleString();
           document.getElementById('stat-avg-views')!.textContent = avgViews.toLocaleString();
           document.getElementById('stat-peak-views')!.textContent = peakViews.toLocaleString();
           document.getElementById('stat-peak-date')!.textContent = peakDateStr;
 
           // Render chart
-          renderSvgChart(data.report);
+          renderSvgChart(dailyReport);
+
+          // Render secondary tables & widgets
+          renderTopPages(data.report.pages);
+          renderTrafficSources(data.report.sources);
+          renderTopCountries(data.report.countries);
+          renderDevicesSplit(data.report.devices);
         } else {
           throw new Error(data.error || 'Failed to load report data');
         }
@@ -217,8 +317,98 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       }
     }
 
-    // Render Custom SVG Analytics Chart
-    function renderSvgChart(report: Array<{ date: string; views: number }>) {
+    function renderTopPages(pages: any[]) {
+      const pagesList = document.getElementById('top-pages-list');
+      if (!pagesList) return;
+      if (!pages || pages.length === 0) {
+        pagesList.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-400 font-medium">No page data available</td></tr>';
+        return;
+      }
+      pagesList.innerHTML = pages.map((p, idx) => `
+        <tr class="hover:bg-slate-50/50 transition">
+          <td class="py-2.5 pl-2 font-bold text-slate-400 font-outfit">#${idx + 1}</td>
+          <td class="py-2.5 pr-4 font-medium truncate max-w-[200px] sm:max-w-xs font-outfit">
+            <div class="text-slate-800 font-bold truncate">${p.title || 'Untitled Page'}</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">${p.path}</div>
+          </td>
+          <td class="py-2.5 text-right pr-2 font-bold font-mono text-slate-650">${p.views.toLocaleString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderTrafficSources(sources: any[]) {
+      const sourcesList = document.getElementById('sources-list');
+      if (!sourcesList) return;
+      if (!sources || sources.length === 0) {
+        sourcesList.innerHTML = '<p class="text-center text-slate-400 text-xs font-medium py-2">No acquisition data available</p>';
+        return;
+      }
+      const colors = ['bg-blue-600', 'bg-emerald-500', 'bg-violet-500', 'bg-slate-400'];
+      sourcesList.innerHTML = sources.map((s, idx) => {
+        const color = colors[idx % colors.length];
+        return `
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px] font-bold text-slate-700 font-outfit">
+              <span>${s.source}</span>
+              <span class="text-slate-500">${s.percentage}% <span class="text-slate-400 font-normal">(${s.users.toLocaleString()} users)</span></span>
+            </div>
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div class="${color} h-full rounded-full" style="width: ${s.percentage}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTopCountries(countries: any[]) {
+      const countriesList = document.getElementById('countries-list');
+      if (!countriesList) return;
+      if (!countries || countries.length === 0) {
+        countriesList.innerHTML = '<p class="text-center text-slate-400 text-[10px] font-medium py-2">No location data</p>';
+        return;
+      }
+      countriesList.innerHTML = countries.map((c) => `
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-bold text-slate-700 font-outfit">
+            <span>${c.country}</span>
+            <span class="text-slate-550">${c.percentage}%</span>
+          </div>
+          <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-indigo-500 h-full rounded-full" style="width: ${c.percentage}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderDevicesSplit(devices: any[]) {
+      const devicesList = document.getElementById('devices-list');
+      if (!devicesList) return;
+      if (!devices || devices.length === 0) {
+        devicesList.innerHTML = '<p class="text-center text-slate-400 text-[10px] font-medium py-2">No device data</p>';
+        return;
+      }
+      const deviceColors: Record<string, string> = {
+        'Mobile': 'bg-violet-500',
+        'Desktop': 'bg-blue-500',
+        'Tablet': 'bg-amber-500'
+      };
+      devicesList.innerHTML = devices.map((d) => {
+        const color = deviceColors[d.device] || 'bg-slate-400';
+        return `
+          <div class="space-y-1">
+            <div class="flex justify-between text-[10px] font-bold text-slate-700 font-outfit">
+              <span>${d.device}</span>
+              <span class="text-slate-550">${d.percentage}%</span>
+            </div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+              <div class="${color} h-full rounded-full" style="width: ${d.percentage}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSvgChart(report: Array<{ date: string; views: number; users: number }>) {
       const svg = document.getElementById('analytics-svg-chart');
       if (!svg) return;
 
@@ -230,14 +420,22 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       const chartHeight = height - padding.top - padding.bottom;
 
       // Extract values
-      const views = report.map(r => r.views);
-      const maxViews = Math.max(...views, 10); // avoid 0 division
+      const viewsList = report.map(r => r.views);
+      const usersList = report.map(r => r.users || 0);
+      const maxVal = Math.max(...viewsList, ...usersList, 10); // avoid 0 division
 
-      // Build points
-      const points = report.map((r, i) => {
+      // Build points for views
+      const viewsPoints = report.map((r, i) => {
         const x = padding.left + (i / (report.length - 1)) * chartWidth;
-        const y = (height - padding.bottom) - (r.views / maxViews) * chartHeight;
-        return { x, y, date: r.date, views: r.views };
+        const y = (height - padding.bottom) - (r.views / maxVal) * chartHeight;
+        return { x, y, date: r.date, val: r.views };
+      });
+
+      // Build points for users
+      const usersPoints = report.map((r, i) => {
+        const x = padding.left + (i / (report.length - 1)) * chartWidth;
+        const y = (height - padding.bottom) - ((r.users || 0) / maxVal) * chartHeight;
+        return { x, y, date: r.date, val: r.users || 0 };
       });
 
       // Clear SVG first
@@ -246,16 +444,20 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       // Create defs for gradients
       const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
       defs.innerHTML = `
-        <linearGradient id="chart-grad-big" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.22" />
+        <linearGradient id="chart-grad-views" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.18" />
           <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="chart-grad-users" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.18" />
+          <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0" />
         </linearGradient>
       `;
       svg.appendChild(defs);
 
       // Y Axis Gridlines & Labels (5 lines)
       for (let i = 0; i <= 4; i++) {
-        const val = Math.round((maxViews / 4) * i);
+        const val = Math.round((maxVal / 4) * i);
         const y = (height - padding.bottom) - (i / 4) * chartHeight;
 
         // Line
@@ -285,7 +487,7 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       const labelIndices = [0, step, step * 2, step * 3, report.length - 1];
       labelIndices.forEach(idx => {
         if (idx >= report.length) return;
-        const pt = points[idx];
+        const pt = viewsPoints[idx];
         const rawDate = pt.date; // YYYYMMDD
         let label = rawDate;
         if (rawDate.length === 8) {
@@ -306,25 +508,41 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
         svg.appendChild(text);
       });
 
-      // Path data for the line
-      const linePathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-      const fillPathData = `${linePathData} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
+      // Draw Views Fill Area
+      const viewsLinePath = viewsPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+      const viewsFillPathData = `${viewsLinePath} L ${viewsPoints[viewsPoints.length - 1].x} ${height - padding.bottom} L ${viewsPoints[0].x} ${height - padding.bottom} Z`;
+      const viewsFillPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      viewsFillPath.setAttribute('d', viewsFillPathData);
+      viewsFillPath.setAttribute('fill', 'url(#chart-grad-views)');
+      svg.appendChild(viewsFillPath);
 
-      // Draw Fill Area
-      const fillPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      fillPath.setAttribute('d', fillPathData);
-      fillPath.setAttribute('fill', 'url(#chart-grad-big)');
-      svg.appendChild(fillPath);
+      // Draw Users Fill Area
+      const usersLinePath = usersPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+      const usersFillPathData = `${usersLinePath} L ${usersPoints[usersPoints.length - 1].x} ${height - padding.bottom} L ${usersPoints[0].x} ${height - padding.bottom} Z`;
+      const usersFillPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      usersFillPath.setAttribute('d', usersFillPathData);
+      usersFillPath.setAttribute('fill', 'url(#chart-grad-users)');
+      svg.appendChild(usersFillPath);
 
-      // Draw Stroke Line
-      const strokePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      strokePath.setAttribute('d', linePathData);
-      strokePath.setAttribute('fill', 'none');
-      strokePath.setAttribute('stroke', '#2563eb');
-      strokePath.setAttribute('stroke-width', '2.5');
-      strokePath.setAttribute('stroke-linejoin', 'round');
-      strokePath.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(strokePath);
+      // Draw Views Stroke Line
+      const viewsStrokePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      viewsStrokePath.setAttribute('d', viewsLinePath);
+      viewsStrokePath.setAttribute('fill', 'none');
+      viewsStrokePath.setAttribute('stroke', '#2563eb');
+      viewsStrokePath.setAttribute('stroke-width', '2.5');
+      viewsStrokePath.setAttribute('stroke-linejoin', 'round');
+      viewsStrokePath.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(viewsStrokePath);
+
+      // Draw Users Stroke Line
+      const usersStrokePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      usersStrokePath.setAttribute('d', usersLinePath);
+      usersStrokePath.setAttribute('fill', 'none');
+      usersStrokePath.setAttribute('stroke', '#8b5cf6');
+      usersStrokePath.setAttribute('stroke-width', '2.5');
+      usersStrokePath.setAttribute('stroke-linejoin', 'round');
+      usersStrokePath.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(usersStrokePath);
 
       // Interactive components
       const hoverLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -336,22 +554,29 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
       hoverLine.style.display = 'none';
       svg.appendChild(hoverLine);
 
-      const hoverDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      hoverDot.setAttribute('r', '5');
-      hoverDot.setAttribute('fill', '#2563eb');
-      hoverDot.setAttribute('stroke', '#ffffff');
-      hoverDot.setAttribute('stroke-width', '2');
-      hoverDot.style.display = 'none';
-      svg.appendChild(hoverDot);
+      const hoverDotViews = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      hoverDotViews.setAttribute('r', '5');
+      hoverDotViews.setAttribute('fill', '#2563eb');
+      hoverDotViews.setAttribute('stroke', '#ffffff');
+      hoverDotViews.setAttribute('stroke-width', '2');
+      hoverDotViews.style.display = 'none';
+      svg.appendChild(hoverDotViews);
+
+      const hoverDotUsers = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      hoverDotUsers.setAttribute('r', '5');
+      hoverDotUsers.setAttribute('fill', '#8b5cf6');
+      hoverDotUsers.setAttribute('stroke', '#ffffff');
+      hoverDotUsers.setAttribute('stroke-width', '2');
+      hoverDotUsers.style.display = 'none';
+      svg.appendChild(hoverDotUsers);
 
       // Tooltip positioning helper
       const tooltip = document.getElementById('chart-tooltip');
       const tooltipDate = document.getElementById('tooltip-date');
-      const tooltipViews = document.getElementById('tooltip-views');
+      const tooltipMetrics = document.getElementById('tooltip-metrics');
 
       svg.addEventListener('mousemove', (e) => {
         const rect = svg.getBoundingClientRect();
-        // Calculate mouse X relative to the SVG width
         const clientX = e.clientX - rect.left;
         const svgX = (clientX / rect.width) * width;
 
@@ -360,52 +585,61 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
           return;
         }
 
-        // Find closest point
-        let closestPt = points[0];
+        // Find closest index
+        let closestIdx = 0;
         let minDist = Infinity;
-        for (const pt of points) {
-          const dist = Math.abs(pt.x - svgX);
+        for (let i = 0; i < viewsPoints.length; i++) {
+          const dist = Math.abs(viewsPoints[i].x - svgX);
           if (dist < minDist) {
             minDist = dist;
-            closestPt = pt;
+            closestIdx = i;
           }
         }
 
-        // Show line & dot
-        hoverLine.setAttribute('x1', closestPt.x.toString());
-        hoverLine.setAttribute('x2', closestPt.x.toString());
+        const ptViews = viewsPoints[closestIdx];
+        const ptUsers = usersPoints[closestIdx];
+
+        // Show line & dots
+        hoverLine.setAttribute('x1', ptViews.x.toString());
+        hoverLine.setAttribute('x2', ptViews.x.toString());
         hoverLine.style.display = 'block';
 
-        hoverDot.setAttribute('cx', closestPt.x.toString());
-        hoverDot.setAttribute('cy', closestPt.y.toString());
-        hoverDot.style.display = 'block';
+        hoverDotViews.setAttribute('cx', ptViews.x.toString());
+        hoverDotViews.setAttribute('cy', ptViews.y.toString());
+        hoverDotViews.style.display = 'block';
+
+        hoverDotUsers.setAttribute('cx', ptUsers.x.toString());
+        hoverDotUsers.setAttribute('cy', ptUsers.y.toString());
+        hoverDotUsers.style.display = 'block';
 
         // Update tooltip content & position
-        if (tooltip && tooltipDate && tooltipViews) {
-          let readableDate = closestPt.date;
-          if (closestPt.date.length === 8) {
-            const year = parseInt(closestPt.date.substring(0, 4));
-            const month = parseInt(closestPt.date.substring(4, 6)) - 1;
-            const day = parseInt(closestPt.date.substring(6, 8));
+        if (tooltip && tooltipDate && tooltipMetrics) {
+          let readableDate = ptViews.date;
+          if (ptViews.date.length === 8) {
+            const year = parseInt(ptViews.date.substring(0, 4));
+            const month = parseInt(ptViews.date.substring(4, 6)) - 1;
+            const day = parseInt(ptViews.date.substring(6, 8));
             readableDate = new Date(year, month, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
           }
 
           tooltipDate.textContent = readableDate;
-          tooltipViews.textContent = `${closestPt.views.toLocaleString()} Page Views`;
+          tooltipMetrics.innerHTML = `
+            <div class="flex items-center justify-between gap-4 text-slate-350"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Views:</span> <strong class="text-white">${ptViews.val.toLocaleString()}</strong></div>
+            <div class="flex items-center justify-between gap-4 text-slate-350 mt-0.5"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>Users:</span> <strong class="text-white">${ptUsers.val.toLocaleString()}</strong></div>
+          `;
           
           tooltip.classList.remove('hidden');
 
-          // Position tooltip
           const tooltipWidth = tooltip.offsetWidth;
           const tooltipHeight = tooltip.offsetHeight;
 
-          // Convert SVG point to client relative coordinates inside the wrapper
           const wrapper = document.getElementById('chart-wrapper')!;
           const wrapperRect = wrapper.getBoundingClientRect();
-          const targetLeft = (closestPt.x / width) * wrapperRect.width - tooltipWidth / 2;
-          const targetTop = (closestPt.y / height) * wrapperRect.height - tooltipHeight - 10;
+          const targetLeft = (ptViews.x / width) * wrapperRect.width - tooltipWidth / 2;
+          
+          const higherY = Math.min(ptViews.y, ptUsers.y);
+          const targetTop = (higherY / height) * wrapperRect.height - tooltipHeight - 10;
 
-          // Limit within bounds
           const leftBound = Math.max(0, Math.min(wrapperRect.width - tooltipWidth, targetLeft));
           const topBound = Math.max(0, targetTop);
 
@@ -418,7 +652,8 @@ if (session?.value !== 'authenticated') return Astro.redirect('/admin');
 
       function hideTooltip() {
         hoverLine.style.display = 'none';
-        hoverDot.style.display = 'none';
+        hoverDotViews.style.display = 'none';
+        hoverDotUsers.style.display = 'none';
         if (tooltip) tooltip.classList.add('hidden');
       }
     }

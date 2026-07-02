@@ -266,35 +266,51 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
 
     // Step 3: Outline Architecture
     await updateLogs(`Architecting outline, meta tags, custom stylesheet, and FAQ schema...`);
-    const outlinePrompt = `You are an expert technical editor and SEO strategist. Generate a comprehensive outline for an authoritative, in-depth, and AdSense-friendly article.
+    const outlinePrompt = `You are an expert content strategist, SEO specialist, and professional blog editor with 10+ years of experience writing for high-authority, AdSense-approved publications.
+Your job is to generate a comprehensive, highly structured outline for a fully original, high-value, and deeply researched article that matches Google AdSense content quality standards and ranks exceptionally well in search engines.
+
 Topic: "${parsedIntent.topic}"
 Target Keyword: "${parsedIntent.selectedKeyword}"
-Publishing Editor: "${author || 'AI Editor'}" (Frame the outline architecture, narrative arc, and guidelines to match this author's area of expertise: Archit writes developer/code guides; Mahi writes SEO/marketing growth guides; Tiyasha writes workflows/productivity automation; Alisa writes SaaS reviews/comparisons).
+Publishing Editor: "${author || 'AI Editor'}" (Frame the outline narrative, tone, and guidelines to match this author's area of expertise: Archit writes developer/code guides; Mahi writes SEO/marketing growth guides; Tiyasha writes workflows/productivity automation; Alisa writes SaaS reviews/comparisons).
 
-${searchContext ? `Here are snippets from top ranking articles on this topic for research and reference:\n${searchContext}\n\nAnalyze these top posts to build an outline that is even more complete, comprehensive, and helpful.` : ''}
+${searchContext ? `Here are snippets from top ranking articles on this topic for factual research and context:\n${searchContext}\n\nAnalyze these references to build an outline that covers the topic in greater depth than any existing source.` : ''}
 
-DYNAMIC ARTICLE STRUCTURE: The outline must define a logical set of H2/H3 sections. The number of sections must be determined dynamically based on the complexity of the topic and research context (minimum 3 sections, maximum 5 sections). Do NOT use a standard outline or a fixed number of sections. Every article must have a unique outline structure and a different number of sections that matches what is actually needed to solve the specific problem.
+ARTICLE LENGTH & STRUCTURE GOALS:
+- The final article will target 1,200–1,500 words in total.
+- You must structure the outline with:
+  1. An "Introduction" as the very first section in the \`sections\` array (100-150 words).
+  2. 3 to 5 dynamic H2 body sections covering the core topic thoroughly.
+  3. A "Conclusion" as the very last section in the \`sections\` array (100-150 words).
+- All sections must have specific, detailed guidelines to ensure E-E-A-T alignment, actionable steps, real-world examples, and zero fluff.
 
 Return a JSON object only. Do NOT add markdown code fences. Structure:
 {
-  "title": "Compelling, catchy final article title (under 60 chars)",
-  "excerpt": "A high-interest 2-sentence intro summary (under 160 chars)",
+  "title": "Compelling, SEO-optimized title under 65 characters containing the target keyword",
+  "excerpt": "A high-interest meta description (150-160 characters) optimized for CTR containing the target keyword",
   "slug": "SEO-optimized URL slug (e.g. 'how-to-fix-xyz')",
   "tags": ["tag1", "tag2", "tag3"],
-  "targetAudience": "Brief profile of the target reader (e.g., frontend developer, system admin, beginner designer)",
-  "searchIntent": "Detailed explanation of the exact search intent and information needs that this article must satisfy",
-  "overallNarrative": "A cohesive overall narrative arc and flow of the piece (e.g., start with problem description, analyze root cause, present a comparison of options, step-by-step resolution, key takeaways)",
+  "targetAudience": "Brief profile of the target reader (e.g., beginners, professionals, small business owners)",
+  "searchIntent": "Detailed explanation of the exact search intent and informational needs that this article must satisfy",
+  "overallNarrative": "A cohesive overall narrative arc and flow of the piece",
   "customCss": "A custom CSS stylesheet string containing valid, highly polished, and modern CSS rules targeting .article-content child elements to make this specific article look premium, distinct, and visually stunning. Do NOT wrap in style tags. Create a cohesive color palette for this article using CSS variables defined in \`.article-content\` (e.g., --theme-primary, --theme-secondary, --theme-accent) depending on the topic (e.g. vibrant purples/blues for tech, deep emeralds for finance, warm terracotta/oranges for lifestyle/productivity). Use these variables to style custom classes and base elements. Style the following custom classes: \`.lead-paragraph\` (intro paragraphs with larger typography, elegant line height, or drop-caps using \`.drop-cap\`), \`.highlight\` (marker highlight spans), \`.badge\` (inline pills/tags), \`.custom-list\` and \`.custom-li\` (custom list bullet icons/counters). Style the premium container boxes: \`.highlight-box\`, \`.warning-box\`, \`.success-box\`, \`.tip-box\`, \`.checklist\`, \`.expert-note\`. Each box style must have distinct backgrounds, borders (e.g., left border accents), shadows, and padding. Also override standard elements to match the theme: style h2 (adding gradient underlines, left borders, or decorative tags), h3, blockquotes (with left border gradients, elegant spacing, italics, and soft box shadow), pre/code blocks (for vibrant modern dark syntax themes, adding a custom header or border), and table styles (using classes like \`.table-wrapper\` and \`.comparison-table\` for clean layout, themed header borders, row striping). Ensure all styles support dark mode by prefixing selectors with \`.dark\` (e.g., \`.dark .article-content .highlight-box\`).",
   "sections": [
     {
-      "heading": "Heading title (e.g., 'What Causes this Error?')",
-      "guidelines": "Instructions detailing what must be fully explained in this section. Ask to write code, provide terminal commands, etc."
+      "heading": "Introduction",
+      "guidelines": "Hook the reader, state the problem/topic, and preview what they will learn. You MUST naturally place the target keyword '${parsedIntent.selectedKeyword}' in the first 100 words."
+    },
+    {
+      "heading": "Section Heading (e.g., 'What Causes this Error?')",
+      "guidelines": "Detailed guidelines covering the specific subtopic, technical code examples, lists, or comparison data."
+    },
+    {
+      "heading": "Conclusion",
+      "guidelines": "Summarize key takeaways, reinforce value, and end with a compelling Call-to-Action."
     }
   ],
   "faqs": [
     {
-      "question": "Commonly asked question",
-      "answer": "Direct, helpful answer under 50 words"
+      "question": "Commonly asked question from 'People Also Ask'",
+      "answer": "Direct, helpful answer under 50 words satisfying AdSense and SEO needs"
     }
   ]
 }`;
@@ -335,13 +351,14 @@ Return a JSON object only. Do NOT add markdown code fences. Structure:
 
       const writePrompt = `${authorPersona}
 
-Write a highly detailed, authoritative, and engaging section of a comprehensive article.
+You are an expert content strategist, SEO specialist, and professional blog writer with 10+ years of experience writing for high-authority publications. Your job is to write a fully original, deeply researched, high-value section of a comprehensive article that meets Google AdSense content quality standards and ranks well in search engines.
 
 --- ARTICLE METADATA ---
 Article Title: "${outline.title}"
-Target Audience: "${outline.targetAudience || 'General developers and tech professionals'}"
-Search Intent: "${outline.searchIntent || 'Informational and educational walkthrough'}"
-Overall Narrative Arc: "${outline.overallNarrative || 'Informative engineering guide'}"
+Target Keyword: "${parsedIntent.selectedKeyword}"
+Target Audience: "${outline.targetAudience || 'General readers'}"
+Search Intent: "${outline.searchIntent || 'Informational and educational'}"
+Overall Narrative Arc: "${outline.overallNarrative || 'Helpful guide'}"
 Full Article Outline:
 ${outline.sections.map((s: any, idx: number) => `${idx + 1}. ${s.heading} (${s.guidelines})`).join('\n')}
 
@@ -356,29 +373,31 @@ ${nextSectionHeading}
 
 ${searchContext ? `Here are snippets from top ranking articles on this topic for factual research and context:\n${searchContext}\n\nUse this real-world context and facts to ensure the content is highly researched, accurate, and professional.` : ''}
 
-Strict instructions to ensure this article is premium, professional, and accessible to everyone:
+Strict content guidelines to follow:
 1. ACCESSIBILITY & SIMPLICITY: Use simple words and clear, concise sentences. Avoid overly complex technical jargon, pretentious vocabulary, or convoluted grammar. Explain concepts clearly using simple analogies or relatable, real-world examples so that everyone can understand and relate to the article. Never use complex words when a simple one works better (e.g., use "use" instead of "utilize", "begin" instead of "commence", "show" instead of "demonstrate").
-2. PREMIUM EDITORIAL VOICE: Write in an authoritative, clear, friendly, and engaging professional voice. Only use first-person experiences ("I", "we", "in my experiments") when they improve credibility and fit a real scenario.
-3. EDITORIAL STANDARDS: Every sentence must earn its place. Focus on user problems. Do NOT explain obvious, basic definitions (e.g., do not explain what a database is unless it's the core focus of the topic). Never repeat ideas, phrases, or keywords.
-3. READABILITY RHYTHM & PARAGRAPHS: Average paragraph length should be 40 to 90 words. Never exceed 120 words for a paragraph unless absolutely necessary. Alternate between short punchy paragraphs, medium paragraphs, and longer explanatory paragraphs to create a natural human reading flow.
-4. NARRATIVE STORYTELLING: Whenever possible, start the section or sub-points with a brief real-world observation, a common developer misconception, a concrete problem, a surprising statistic, or a short scenario, rather than a generic textbook explanation.
-5. VISUAL LAYOUT & DESIGN SYSTEM: Think like a designer. Every 300 to 500 words, include exactly one visual element or styled box where it naturally improves understanding. Do NOT over-use them. Use the following CSS/HTML design system classes:
+2. ADSense POLICY & QUALITY: No thin or low-effort content — every single paragraph must add genuine, specific value. Do not write generic or filler text. Maintain a naturally balanced, helpful, human-first perspective. Avoid AI-sounding clichés ("in today's fast-paced world," "unlock the power of," "delve into," "in summary," "essentially," "moreover," "furthermore").
+3. SCANNABLE PARAGRAPHS: Keep paragraphs short and highly scannable (2-4 sentences max, averaging 40 to 90 words). Use bullet points, numbered lists, or styled layout containers where appropriate to break up large blocks of text.
+4. KEYWORD PLACEMENT:
+   - If this section is the "Introduction", you MUST naturally place the target keyword "${parsedIntent.selectedKeyword}" within the first 100 words.
+   - For all other sections, write naturally and avoid keyword stuffing.
+5. INTERNAL & EXTERNAL LINKS:
+   - Naturally suggest 2-3 internal link anchors in the format: \`[link to related article on X]\`.
+   - Naturally suggest 1-2 authoritative external reference anchors in the format: \`[link to authoritative reference on Y]\`.
+6. DESIGN SYSTEM INTEGRATION: Think like a designer. Every 300 to 500 words, include exactly one visual element or styled box where it naturally improves understanding. Do NOT over-use them. Use the following CSS/HTML design system classes:
    - For introductory paragraphs or key opening thoughts, use: <p class="lead-paragraph">...</p> or insert a drop cap: <span class="drop-cap">T</span>he rest of the text...
-   - Highlight box: <div class="highlight-box">...</div> (for key callouts)
-   - Warning box: <div class="warning-box">...</div> (for errors, pitfalls, cautions)
-   - Success box: <div class="success-box">...</div> (for verified solutions, positive results)
-   - Tip box: <div class="tip-box">...</div> (for pro-tips, helper advice)
+   - Highlight box: <div class="highlight-box">...</div>
+   - Warning box: <div class="warning-box">...</div>
+   - Success box: <div class="success-box">...</div>
+   - Tip box: <div class="tip-box">...</div>
    - Checklist: <ul class="checklist"><li>[ ] ...</li></ul>
    - Expert note: <div class="expert-note">...</div>
    - Quotes: <blockquote>...</blockquote>
    - Comparison tables: Wrap tables in <div class="table-wrapper"><table class="comparison-table">...</table></div>
    - Highlighted text segments: <span class="highlight">...</span>
    - Badges/inline pills: <span class="badge">...</span>
-6. STRONGER TRANSITIONS: Ensure this section naturally connects to the previous section. Use the provided previous section's text to write a smooth opening transition, and use the next section's heading to bridge or direct the reader forward at the end.
-7. ON-PAGE SEO & INTENT: Do NOT optimize for keywords. Optimize for search intent. Write exactly what would completely satisfy the reader if they searched this query.
-8. FORMATTING: Use HTML tags ONLY: <p>, <strong>, <em>, <ul>, <ol>, <li>, <blockquote>, <pre><code>, <h3>, <h4>, <div>, <span>, <table>, <thead>, <tbody>, <tr>, <th>, <td> etc. Do NOT include markdown code fences (\`\`\`html) or outer wrapper tags (<html>/<body>).
-9. LENGTH: Write approximately ${targetSectionWords} words for this section (aim for a strict range of ${targetSectionWords - 30} to ${targetSectionWords + 30} words). Maintain an expert, authoritative, and helpful human tone.
-10. NO DUPLICATE HEADINGS: Do NOT output the section heading ("${section.heading}") inside your response. Start writing directly with the section's content (paragraphs, divs, lists, etc.). The heading will be rendered automatically by the system.`;
+7. FORMATTING: Use HTML tags ONLY: <p>, <strong>, <em>, <ul>, <ol>, <li>, <blockquote>, <pre><code>, <h3>, <h4>, <div>, <span>, <table>, <thead>, <tbody>, <tr>, <th>, <td>. Do NOT include markdown code fences (\`\`\`html) or outer wrapper tags (<html>/<body>).
+8. LENGTH: Write approximately ${targetSectionWords} words for this section (aim for a strict range of ${targetSectionWords - 30} to ${targetSectionWords + 30} words).
+9. NO DUPLICATE HEADINGS: Do NOT output the section heading ("${section.heading}") inside your response. Start writing directly with the section's content (paragraphs, lists, boxes, etc.).`;
 
       const sectionHtml = await callLLM(provider, apiKeys, writePrompt, false, model);
       const cleanedSectionHtml = cleanSectionOutput(sectionHtml, section.heading);

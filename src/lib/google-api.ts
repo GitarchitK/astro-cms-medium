@@ -80,14 +80,62 @@ export async function getGoogleAnalyticsReport(propertyId: string) {
     auth: jwtClient
   });
 
-  const response = await analyticsdata.properties.runReport({
-    property: `properties/${propertyId}`,
-    requestBody: {
-      dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
-      metrics: [{ name: 'screenPageViews' }],
-      dimensions: [{ name: 'date' }]
-    }
-  });
+  const [dailyResponse, pagesResponse, sourcesResponse, countriesResponse, devicesResponse] = await Promise.all([
+    // 1. Daily views & active users
+    analyticsdata.properties.runReport({
+      property: `properties/${propertyId}`,
+      requestBody: {
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
+        dimensions: [{ name: 'date' }]
+      }
+    }),
+    // 2. Top performing page paths
+    analyticsdata.properties.runReport({
+      property: `properties/${propertyId}`,
+      requestBody: {
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        metrics: [{ name: 'screenPageViews' }],
+        dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
+        limit: '15'
+      }
+    }),
+    // 3. Traffic acquisition channels
+    analyticsdata.properties.runReport({
+      property: `properties/${propertyId}`,
+      requestBody: {
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        metrics: [{ name: 'activeUsers' }],
+        dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+        limit: '10'
+      }
+    }),
+    // 4. Visitor countries
+    analyticsdata.properties.runReport({
+      property: `properties/${propertyId}`,
+      requestBody: {
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        metrics: [{ name: 'activeUsers' }],
+        dimensions: [{ name: 'country' }],
+        limit: '5'
+      }
+    }),
+    // 5. Visitor device category profiles
+    analyticsdata.properties.runReport({
+      property: `properties/${propertyId}`,
+      requestBody: {
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        metrics: [{ name: 'activeUsers' }],
+        dimensions: [{ name: 'deviceCategory' }]
+      }
+    })
+  ]);
 
-  return response.data;
+  return {
+    daily: dailyResponse.data,
+    pages: pagesResponse.data,
+    sources: sourcesResponse.data,
+    countries: countriesResponse.data,
+    devices: devicesResponse.data
+  };
 }
